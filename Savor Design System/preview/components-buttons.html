@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 28px; background: var(--bg-app); display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .pair { display: flex; flex-direction: column; gap: 10px; }
+  button {
+    font-family: var(--font-body); font-size: 15px; font-weight: 600; cursor: pointer;
+    border-radius: var(--radius-pill); padding: 14px 28px; min-width: 180px;
+    transition: all var(--duration-base) var(--ease-standard);
+    border: 1px solid transparent;
+  }
+  .primary { background: var(--bg-brand); color: var(--fg-on-brand); }
+  .primary:hover { background: var(--bg-brand-hover); }
+  .secondary { background: var(--bg-surface); color: var(--fg-brand); border-color: var(--fg-brand); }
+  .secondary:hover { background: var(--bg-cream); }
+  .tertiary { background: transparent; color: var(--fg-brand); padding: 14px 16px; min-width: 0; }
+  .tertiary:hover { opacity: 0.7; }
+  .meta { font-size: 11px; color: var(--fg-2); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
+</style></head><body>
+  <div class="pair"><span class="meta">Primary</span><button class="primary">Start cooking</button></div>
+  <div class="pair"><span class="meta">Secondary</span><button class="secondary">View steps</button></div>
+  <div class="pair"><span class="meta">Tertiary</span><button class="tertiary">Save for later</button></div>
+</body></html>

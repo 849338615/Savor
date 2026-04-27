@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 28px; background: var(--bg-app); display: flex; flex-direction: column; gap: 12px; max-width: 380px; }
+  .item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; background: var(--bg-surface);
+    border: 1px solid var(--border-hairline); border-radius: var(--radius-md);
+    cursor: pointer; transition: all var(--duration-base) var(--ease-standard);
+  }
+  .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .item.done .check { background: var(--bg-brand); border-color: var(--bg-brand); }
+  .item.done .label { color: var(--fg-2); text-decoration: line-through; }
+  .label { font-size: 15px; color: var(--fg-1); flex: 1; }
+  .qty { font-size: 13px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+</style></head><body>
+  <div class="item done"><div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FAF7F2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><span class="label">Olive oil</span><span class="qty">3 tbsp</span></div>
+  <div class="item"><div class="check"></div><span class="label">Garlic, minced</span><span class="qty">3 cloves</span></div>
+  <div class="item"><div class="check"></div><span class="label">Salt</span><span class="qty">to taste</span></div>
+</body></html>

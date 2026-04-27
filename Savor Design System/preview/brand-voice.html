@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 28px; background: var(--bg-app); display: flex; flex-direction: column; gap: 12px; }
+  .voice { padding: 14px 18px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .voice.do { background: #EFF3EC; border: 1px solid #C9D8C6; color: var(--fg-1); }
+  .voice.dont { background: #F5EBE6; border: 1px solid #E8D2C8; color: #6E3E33; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 4px; }
+  .voice.do .tag { background: var(--savor-forest); color: var(--savor-cream); }
+  .voice.dont .tag { background: #A14A3D; color: var(--savor-cream); }
+  .text { font-style: italic; }
+</style></head><body>
+  <div class="voice do"><span class="tag">DO</span><span class="text">"Let's get cooking."</span></div>
+  <div class="voice do"><span class="tag">DO</span><span class="text">"Here's what you'll need."</span></div>
+  <div class="voice do"><span class="tag">DO</span><span class="text">"Saved for later."</span></div>
+  <div class="voice dont"><span class="tag">DON'T</span><span class="text">"Hurry — unlock premium recipes now!"</span></div>
+  <div class="voice dont"><span class="tag">DON'T</span><span class="text">"Crush your meal-prep goals 🔥"</span></div>
+</body></html>

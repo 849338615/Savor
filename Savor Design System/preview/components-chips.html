@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 28px; background: var(--bg-app); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* Flat chips: no shadow, no inset highlight, no border on default state.
+     Surface tone alone differentiates them. */
+  .chip {
+    font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--savor-cream);
+    color: var(--fg-1);
+    border: 0;
+    cursor: pointer;
+    transition: background var(--duration-base) var(--ease-standard),
+                color var(--duration-base) var(--ease-standard);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip:hover {
+    background: var(--savor-linen);
+  }
+  .chip.active {
+    background: var(--savor-sage-mist);
+    color: var(--fg-brand);
+    font-weight: 600;
+  }
+  .chip.solid {
+    background: var(--bg-brand);
+    color: var(--fg-on-brand);
+  }
+  .chip.solid:hover { background: var(--bg-brand-hover); }
+
+  .meta {
+    width: 100%;
+    font-size: 11px; color: var(--fg-2);
+    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+    margin-bottom: -4px;
+  }
+</style></head><body>
+  <div class="meta">Filter chips</div>
+  <span class="chip">Quick</span>
+  <span class="chip active">Vegetarian</span>
+  <span class="chip">Dinner</span>
+  <span class="chip">Under 30 min</span>
+  <span class="chip solid">+ Add filter</span>
+</body></html>

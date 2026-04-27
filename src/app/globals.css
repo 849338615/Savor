@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Savor Design System — tokens
+   Mirrors design.md / colors_and_type.css from the design bundle.
+   ========================================================================== */
+:root {
+  /* Primary palette */
+  --savor-forest: #1f4d3a;
+  --savor-forest-deep: #173b2c;
+  --savor-sage: #7ba489;
+  --savor-sage-mist: #c9d8c6;
+  --savor-cream: #f6f1e8;
+  --savor-paper: #fffcf6;
+  --savor-soft-white: #faf7f2;
+
+  /* Neutrals */
+  --savor-ink: #232323;
+  --savor-stone: #6e6b66;
+  --savor-mist: #d9d5cf;
+  --savor-linen: #efe7da;
+  --savor-sand: #e7d9c2;
+  --savor-olive: #92a37d;
+
+  /* Semantic foreground */
+  --fg-1: var(--savor-ink);
+  --fg-2: var(--savor-stone);
+  --fg-3: #9a9690;
+  --fg-brand: var(--savor-forest);
+  --fg-on-brand: var(--savor-soft-white);
+
+  /* Semantic background */
+  --bg-app: var(--savor-soft-white);
+  --bg-surface: #fffdf8;
+  --bg-cream: var(--savor-cream);
+  --bg-paper: var(--savor-paper);
+  --bg-sand: var(--savor-sand);
+  --bg-sage-mist: var(--savor-sage-mist);
+  --bg-brand: var(--savor-forest);
+  --bg-brand-hover: #1a4131;
+  --bg-brand-pressed: #143527;
+
+  /* Lines */
+  --border-hairline: #e6e1d6;
+  --border-subtle: var(--savor-mist);
+  --border-strong: #c7c2b8;
+  --border-active-faint: rgba(31, 77, 58, 0.12);
+
+  /* Scrims */
+  --scrim-modal: rgba(35, 35, 35, 0.32);
+
+  /* App-edge shadow (used on the desktop phone-card frame) */
+  --shadow-app-edge: 0 24px 60px -24px rgba(35, 35, 35, 0.18);
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(35, 35, 35, 0.04);
+  --shadow-sm: 0 2px 8px rgba(35, 35, 35, 0.05);
+  --shadow-md: 0 8px 24px rgba(35, 35, 35, 0.06);
+  --shadow-lg: 0 16px 40px rgba(35, 35, 35, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(31, 77, 58, 0.18);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+
+  /* Surface roles */
+  --background: var(--bg-app);
+  --foreground: var(--fg-1);
+}
+
+/* ==========================================================================
+   Tailwind v4 theme — exposes tokens as utility classes
+   ========================================================================== */
+@theme inline {
+  --color-background: var(--bg-app);
+  --color-foreground: var(--fg-1);
+  --color-muted-foreground: var(--fg-2);
+
+  --color-forest: var(--savor-forest);
+  --color-forest-deep: var(--savor-forest-deep);
+  --color-sage: var(--savor-sage);
+  --color-sage-mist: var(--savor-sage-mist);
+  --color-cream: var(--savor-cream);
+  --color-paper: var(--savor-paper);
+  --color-soft-white: var(--savor-soft-white);
+  --color-surface: var(--bg-surface);
+  --color-ink: var(--savor-ink);
+  --color-stone: var(--savor-stone);
+  --color-mist: var(--savor-mist);
+  --color-linen: var(--savor-linen);
+  --color-sand: var(--savor-sand);
+  --color-olive: var(--savor-olive);
+
+  --color-charcoal: var(--savor-ink);
+
+  --font-display: var(--font-playfair);
+  --font-sans: var(--font-inter);
+
+  --radius-button: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--fg-1);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-playfair), ui-serif, Georgia, "Times New Roman", serif;
+  letter-spacing: -0.01em;
+}
+
+/* Calm focus ring: forest, never harsh blue. Outline (not box-shadow) so the
+   ring isn't clipped by parent overflow:hidden — common on cards and rows. */
+*:focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--savor-forest) 32%, transparent);
+  outline-offset: 2px;
+}
+
+/* Hide scrollbars on horizontal chip rows but stay accessible */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Calm skeleton pulse — quieter than tailwind's default animate-pulse */
+@keyframes savor-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.savor-pulse {
+  animation: savor-pulse 1.8s var(--ease-out-soft) infinite;
+}
+
+/* Steam — Savor's "something is cooking" loading indicator.
+   Each wisp's path is drawn from bottom to top via stroke-dashoffset,
+   then dissipates as it lifts off. Three wisps stagger by a third of the
+   cycle so the silhouette is always in motion without ever feeling busy.
+   Used by `<PulseDot />` in feedback/. */
+@keyframes savor-steam {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 22;
+  }
+  18% {
+    opacity: 0.65;
+  }
+  55% {
+    opacity: 0.7;
+    stroke-dashoffset: 0;
+  }
+  78% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -22;
+  }
+}
+.savor-steam {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: savor-steam 2.4s ease-in-out infinite;
+  /* Subtle wobble axis — gives wisps a hint of organic drift. */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.savor-steam-1 {
+  animation-delay: 0s;
+}
+.savor-steam-2 {
+  animation-delay: 0.8s;
+}
+.savor-steam-3 {
+  animation-delay: 1.6s;
+}
+
+/* Quiet Savor signature: a thin notched rail used in step lists, hero meta,
+   profile separators. Its purpose is purely identity — same rhythm everywhere. */
+.savor-rail {
+  background-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(50% - 0.5px),
+    var(--border-subtle) calc(50% - 0.5px),
+    var(--border-subtle) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px),
+    transparent 100%
+  );
+  background-size: 6px 100%;
+  background-repeat: repeat-x;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

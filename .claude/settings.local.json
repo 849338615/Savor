@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills *)",
+      "Bash(pkill -f \"skills add\")",
+      "Read(//Users/ming/.agents/skills/impeccable/**)",
+      "Read(//Users/ming/.claude/skills/**)"
+    ]
+  }
+}

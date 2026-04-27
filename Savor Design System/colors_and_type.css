@@ -1,0 +1,232 @@
+/* ==========================================================================
+   Savor Design System — Colors & Type
+   --------------------------------------------------------------------------
+   Calm cooking app. Editorial-but-readable typography, sage/cream palette.
+   ========================================================================== */
+
+/* ---------- Webfonts ---------- */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* ====================================================================
+     COLOR TOKENS (raw)
+     ==================================================================== */
+
+  /* Primary palette */
+  --savor-forest:        #1F4D3A;  /* anchors logo, primary CTAs, key headings, active states */
+  --savor-sage:          #7BA489;  /* secondary brand, supporting UI */
+  --savor-sage-mist:     #C9D8C6;  /* chips, filters, progress, subtle highlights */
+  --savor-cream:         #F6F1E8;  /* dominant surface */
+  --savor-white:         #FAF7F2;  /* dominant surface, app background */
+
+  /* Neutrals */
+  --savor-charcoal:      #232323;  /* body text, primary type */
+  --savor-stone:         #6E6B66;  /* secondary text, captions */
+  --savor-mist:          #D9D5CF;  /* hairline borders, dividers */
+  --savor-linen:         #EFE7DA;  /* tinted surfaces, sand cards */
+
+  /* Accents */
+  --savor-olive:         #92A37D;  /* muted accent */
+  --savor-sand:          #E7D9C2;  /* warm accent surface */
+  --savor-gold:          #C7A969;  /* presentation accent ONLY, sparingly */
+
+  /* Semantic foreground */
+  --fg-1:                var(--savor-charcoal);   /* primary text */
+  --fg-2:                var(--savor-stone);      /* secondary text */
+  --fg-3:                #9A9690;                 /* tertiary text */
+  --fg-brand:            var(--savor-forest);     /* brand text & links */
+  --fg-on-brand:         var(--savor-white);      /* text on forest */
+  --fg-on-sage:          var(--savor-forest);     /* text on sage */
+
+  /* Semantic background */
+  --bg-app:              var(--savor-white);      /* default app background */
+  --bg-surface:          #FFFFFF;                 /* cards, sheets */
+  --bg-cream:            var(--savor-cream);      /* warm panel surface */
+  --bg-sand:             var(--savor-sand);       /* warm accent surface */
+  --bg-sage-mist:        var(--savor-sage-mist);  /* progress, chip active */
+  --bg-brand:            var(--savor-forest);     /* primary CTA */
+  --bg-brand-hover:      #1A4131;                 /* primary CTA hover */
+  --bg-brand-pressed:    #143527;                 /* primary CTA pressed */
+
+  /* Lines */
+  --border-hairline:     #E6E1D6;                 /* default card border */
+  --border-subtle:       var(--savor-mist);       /* dividers */
+  --border-strong:       #C7C2B8;                 /* emphasized */
+
+  /* States (calm, not alarmist) */
+  --state-success:       var(--savor-forest);
+  --state-warning:       #B98A3E;
+  --state-danger:        #A14A3D;
+  --state-info:          var(--savor-sage);
+
+  /* ====================================================================
+     TYPOGRAPHY TOKENS
+     ==================================================================== */
+
+  --font-display:        "Playfair Display", "Iowan Old Style", Georgia, serif;
+  --font-body:           "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:           ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Scale (px) per brand sheet */
+  --text-h1:             3.25rem;   /* 52px (range 48–56) */
+  --text-h2:             2.25rem;   /* 36px (range 32–40) */
+  --text-h3:             1.625rem;  /* 26px (range 24–28) */
+  --text-body:           1rem;      /* 16px */
+  --text-small:          0.875rem;  /* 14px */
+  --text-caption:        0.75rem;   /* 12px */
+
+  /* Weights */
+  --weight-display-bold:      700;
+  --weight-display-semibold:  600;
+  --weight-body-regular:      400;
+  --weight-body-medium:       500;
+  --weight-body-semibold:     600;
+
+  /* Line-heights — generous, calm rhythm */
+  --leading-tight:       1.15;
+  --leading-snug:        1.3;
+  --leading-normal:      1.55;
+  --leading-relaxed:     1.7;
+
+  /* Letter-spacing — Playfair sits naturally; Inter we open slightly for eyebrows */
+  --tracking-tight:      -0.01em;
+  --tracking-normal:     0;
+  --tracking-wide:       0.08em;
+  --tracking-eyebrow:    0.18em;   /* small caps eyebrows ("ABOUT THE BRAND") */
+
+  /* ====================================================================
+     SPACING — 4px base, generous rhythm
+     ==================================================================== */
+  --space-0:             0;
+  --space-1:             0.25rem;   /* 4 */
+  --space-2:             0.5rem;    /* 8 */
+  --space-3:             0.75rem;   /* 12 */
+  --space-4:             1rem;      /* 16 */
+  --space-5:             1.25rem;   /* 20 */
+  --space-6:             1.5rem;    /* 24 */
+  --space-8:             2rem;      /* 32 */
+  --space-10:            2.5rem;    /* 40 */
+  --space-12:            3rem;      /* 48 */
+  --space-16:            4rem;      /* 64 */
+  --space-20:            5rem;      /* 80 */
+
+  /* ====================================================================
+     RADII — soft, generous
+     ==================================================================== */
+  --radius-xs:           4px;
+  --radius-sm:           8px;
+  --radius-md:           12px;
+  --radius-lg:           16px;     /* default cards */
+  --radius-xl:           20px;     /* sheets, large surfaces */
+  --radius-2xl:          28px;     /* hero/photo cards */
+  --radius-pill:         999px;    /* chips, primary buttons */
+
+  /* ====================================================================
+     SHADOWS — soft & low. Never glossy.
+     ==================================================================== */
+  --shadow-xs:           0 1px 2px rgba(35, 35, 35, 0.04);
+  --shadow-sm:           0 2px 8px rgba(35, 35, 35, 0.05);
+  --shadow-md:           0 8px 24px rgba(35, 35, 35, 0.06);
+  --shadow-lg:           0 16px 40px rgba(35, 35, 35, 0.08);
+  --shadow-focus:        0 0 0 3px rgba(31, 77, 58, 0.18);
+
+  /* ====================================================================
+     MOTION — gentle, never bouncy
+     ==================================================================== */
+  --ease-standard:       cubic-bezier(0.2, 0.0, 0.2, 1);
+  --ease-out-soft:       cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast:       140ms;
+  --duration-base:       220ms;
+  --duration-slow:       360ms;
+}
+
+/* ==========================================================================
+   ELEMENT DEFAULTS — semantic mapping
+   Use these classes / element styles to get on-brand type "for free".
+   ========================================================================== */
+
+html, body {
+  background: var(--bg-app);
+  color: var(--fg-1);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  font-size: var(--text-h1);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-brand);
+  margin: 0 0 var(--space-4) 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-semibold);
+  font-size: var(--text-h2);
+  line-height: var(--leading-snug);
+  color: var(--fg-1);
+  margin: 0 0 var(--space-3) 0;
+}
+
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-semibold);
+  font-size: var(--text-h3);
+  line-height: var(--leading-snug);
+  color: var(--fg-1);
+  margin: 0 0 var(--space-3) 0;
+}
+
+p, .body {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: var(--weight-body-regular);
+  line-height: var(--leading-relaxed);
+  color: var(--fg-1);
+  margin: 0 0 var(--space-4) 0;
+  text-wrap: pretty;
+}
+
+.small, small {
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--fg-2);
+}
+
+.caption {
+  font-size: var(--text-caption);
+  line-height: var(--leading-normal);
+  color: var(--fg-2);
+}
+
+/* Eyebrow / kicker — small caps style used on the brand sheet
+   ("ABOUT THE BRAND", "OUR MISSION", "LOGO SUITE") */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-body-semibold);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-brand);
+}
+
+a {
+  color: var(--fg-brand);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+a:hover { opacity: 0.7; }
+
+/* Focus ring — visible but soft */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}

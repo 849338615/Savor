@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-app); display: flex; flex-direction: column; gap: 12px; }
+  .step {
+    display: flex; gap: 16px; padding: 18px 20px;
+    background: var(--bg-surface); border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-md);
+  }
+  .num { font-family: var(--font-display); font-weight: 600; font-size: 20px; color: var(--fg-brand); width: 24px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
+  .body-text { font-size: 15px; color: var(--fg-1); line-height: 1.55; margin: 0; flex: 1; }
+  .timer { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 10px; background: var(--bg-sage-mist); color: var(--fg-brand); font-size: 12px; font-weight: 600; border-radius: var(--radius-pill); }
+</style></head><body>
+  <div class="step">
+    <div class="num">1</div>
+    <div>
+      <p class="body-text"><b>Cook the pasta.</b> Bring a large pot of salted water to a boil. Cook pasta until al dente, then drain and set aside.</p>
+      <span class="timer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>10:00</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <p class="body-text"><b>Sauté garlic.</b> Heat olive oil in a pan over medium heat. Add garlic and sauté until fragrant, about a minute.</p>
+  </div>
+</body></html>
