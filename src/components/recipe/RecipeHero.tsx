@@ -6,6 +6,7 @@ import type { Recipe } from "@/lib/recipes/types";
 import { formatMinutes, pluralize } from "@/lib/utils";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "@/components/results/RecipePhoto";
+import { useSectionBackHref } from "@/hooks/useNav";
 
 interface RecipeHeroProps {
   recipe: Recipe;
@@ -13,15 +14,20 @@ interface RecipeHeroProps {
 
 export function RecipeHero({ recipe }: RecipeHeroProps) {
   const router = useRouter();
+  const sectionBack = useSectionBackHref();
+  const handleBack = () => {
+    if (sectionBack) router.push(sectionBack);
+    else router.back();
+  };
 
   return (
     <div className="relative w-full overflow-hidden aspect-[5/4]">
-      <RecipePhoto recipe={recipe} className="absolute inset-0" />
+      <RecipePhoto recipe={recipe} variant="hero" className="absolute inset-0" />
 
       <div className="absolute inset-x-0 top-0 flex items-start justify-between px-2 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={handleBack}
           aria-label="Back"
           className="grid h-11 w-11 place-items-center"
         >
@@ -34,9 +40,11 @@ export function RecipeHero({ recipe }: RecipeHeroProps) {
         </button>
         <BookmarkToggle
           recipeId={recipe.id}
+          summary={recipe}
           size={18}
           visualSize={40}
           onScrim
+          confirmRemove
         />
       </div>
 

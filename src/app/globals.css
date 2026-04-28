@@ -149,6 +149,17 @@ body {
   scrollbar-width: none;
 }
 
+/* Suppress the native <input type="search"> decorations so our custom Clear
+   button is the only clear affordance. Without this, iOS Safari and Chrome
+   render a duplicate "×" inside the input. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* Calm skeleton pulse — quieter than tailwind's default animate-pulse */
 @keyframes savor-pulse {
   0%,

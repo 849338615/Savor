@@ -3,9 +3,11 @@ import { TopBar } from "@/components/layout/TopBar";
 import { SearchBar } from "@/components/search/SearchBar";
 import { FilterChips } from "@/components/search/FilterChips";
 import { RecipeResultRow } from "@/components/results/RecipeResultRow";
+import { RecordLastResults } from "@/components/results/RecordLastResults";
 import { RecipeResultRowSkeleton } from "@/components/feedback/RecipeResultRowSkeleton";
 import { PulseDot } from "@/components/feedback/PulseDot";
 import { getProvider } from "@/lib/recipes/getProvider";
+import { pluralize } from "@/lib/utils";
 
 interface ResultsPageProps {
   searchParams: Promise<{ q?: string; tag?: string }>;
@@ -26,20 +28,26 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const headline = buildHeadline(q, tag);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-1 flex-col">
+      <RecordLastResults q={q} tag={tag ?? ""} />
       <TopBar title="Results" />
 
-      <div className="px-5">
+      {/* Header rhythm: TopBar → SearchBar (24px, framing the bar away
+          from the nav lockup) → Chips (16px, intra-section) → Section
+          headline (24px, mirrors the TopBar gap to bookend the header
+          zone). The 24/16/24 pattern reads as a distinct "header
+          section" between the nav and the results body. */}
+      <div className="px-6 pt-3">
         <SearchBar defaultValue={q} />
       </div>
 
       <Suspense fallback={<div className="h-10" />}>
-        <div className="mt-4 px-5">
+        <div className="mt-4 px-6">
           <FilterChips />
         </div>
       </Suspense>
 
-      <section className="flex flex-1 flex-col px-5 pt-7 pb-8">
+      <section className="flex flex-1 flex-col px-6 pt-6 pb-8">
         <h2 className="font-display text-[22px] font-semibold leading-tight text-ink">
           {headline}
         </h2>
@@ -60,13 +68,22 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
 async function ResultsBody({ q, tag }: { q: string; tag?: string }) {
   const recipes = await getProvider().search(q, { tag, limit: 8 });
 
+  if (recipes.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-start justify-center gap-1 pb-12">
+        <p className="text-[14px] font-medium text-ink">
+          Nothing matched.
+        </p>
+        <p className="max-w-[34ch] text-[13px] leading-relaxed text-stone">
+          Try a broader search, or pick a mood from the chips above.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
-      <p className="mt-1.5 text-[12px] text-stone">
-        {recipes.length === 0
-          ? "Nothing matched. Try a broader search."
-          : `${recipes.length} result${recipes.length === 1 ? "" : "s"}`}
-      </p>
+      <p className="mt-2 text-[12px] text-stone">{pluralize(recipes.length, "result")}</p>
 
       <ul className="mt-4 flex flex-col gap-3">
         {recipes.map((recipe) => (
@@ -91,7 +108,7 @@ function ResultsBodyLoading({
   return (
     <>
       <p
-        className="mt-1.5 flex items-center gap-2 text-[12px] text-stone"
+        className="mt-2 flex items-center gap-2 text-[12px] text-stone"
         role="status"
         aria-live="polite"
       >

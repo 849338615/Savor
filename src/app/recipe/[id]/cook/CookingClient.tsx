@@ -8,6 +8,10 @@ import { CookingStep } from "@/components/cook/CookingStep";
 import { CookingControls } from "@/components/cook/CookingControls";
 import { TimerDisplay } from "@/components/cook/TimerDisplay";
 import { Skeleton } from "@/components/feedback/Skeleton";
+import {
+  AmbientLayer,
+  Bloom,
+} from "@/components/layout/AmbientBackground";
 import { useCookingSession } from "@/hooks/useCookingSession";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { cn } from "@/lib/utils";
@@ -21,14 +25,34 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
   const next = useCookingSession((s) => s.next);
   const prev = useCookingSession((s) => s.prev);
   const goTo = useCookingSession((s) => s.goTo);
+  const reset = useCookingSession((s) => s.reset);
   const hasHydrated = useCookingSession((s) => s.hasHydrated);
   const largeText = useCookingSession((s) => s.largeText);
   const toggleLargeText = useCookingSession((s) => s.toggleLargeText);
 
   useWakeLock(true);
 
+  // Belt-and-suspenders: if the persist middleware finished rehydrating before
+  // this component subscribed (storage was warm, no async read), the
+  // onRehydrateStorage callback may already have fired. Read the persist
+  // status directly and flip the flag ourselves so we don't get stuck on the
+  // skeleton.
+  useEffect(() => {
+    if (hasHydrated) return;
+    if (useCookingSession.persist.hasHydrated()) {
+      useCookingSession.getState().setHasHydrated(true);
+      return;
+    }
+    const unsub = useCookingSession.persist.onFinishHydration(() => {
+      useCookingSession.getState().setHasHydrated(true);
+    });
+    return unsub;
+  }, [hasHydrated]);
+
+  const finishingRef = useRef(false);
   useEffect(() => {
     if (!hasHydrated) return;
+    if (finishingRef.current) return;
     if (recipeId !== recipe.id) {
       start(recipe.id, recipe.steps.length, {
         slug: recipe.slug,
@@ -86,6 +110,16 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
     }
   }, [router, recipe.slug]);
 
+  const finish = useCallback(() => {
+    finishingRef.current = true;
+    reset();
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.replace(`/recipe/${recipe.slug}`);
+    }
+  }, [reset, router, recipe.slug]);
+
   const [confirmExit, setConfirmExit] = useState(false);
   const requestExit = () => {
     if (safeIndex === 0) return exit();
@@ -122,12 +156,25 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col bg-cream"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-cream"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Cook-mode ambient — a centered warm bloom that intensifies the
+          focus around the photo and step text. The cream surface blocks
+          the AppShell's base bloom, so this layer carries cook-mode's
+          identity warmth on its own. */}
+      <AmbientLayer>
+        <Bloom
+          position="left-1/2 top-[12%] -translate-x-1/2"
+          size="w-[125%]"
+          tone="sand"
+          opacity={42}
+          fadeAt={58}
+        />
+      </AmbientLayer>
       <h1 className="sr-only">Cooking: {recipe.title}</h1>
-      <header className="flex items-center justify-between gap-3 px-5 pb-3 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]">
+      <header className="relative flex items-center justify-between gap-3 px-5 pb-3 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]">
         <button
           type="button"
           onClick={requestExit}
@@ -173,7 +220,7 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
 
       <ol
         aria-label="Step rail"
-        className="mx-auto flex w-full max-w-[360px] items-center justify-between px-3 pb-1"
+        className="relative mx-auto flex w-full max-w-[360px] items-center justify-between px-3 pb-1"
       >
         {recipe.steps.map((s, i) => {
           const done = i < safeIndex;
@@ -206,7 +253,7 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-7 py-6 text-center",
+          "relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-7 py-6 text-center",
           largeText && "text-[1.15em]",
         )}
       >
@@ -220,16 +267,16 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
       </div>
 
       <div
-        className="flex gap-2.5 px-5 pt-3.5"
+        className="relative flex gap-2.5 px-5 pt-3.5"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)" }}
       >
         <CookingControls
           canPrev={safeIndex > 0}
           canNext={!isLast}
           isLast={isLast}
-          recipeSlug={recipe.slug}
           onPrev={prev}
           onNext={next}
+          onFinish={finish}
         />
       </div>
 

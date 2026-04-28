@@ -44,7 +44,7 @@ export function IngredientItem({
           checked && "text-stone line-through",
         )}
       >
-        <span className="block">
+        <span className="block first-letter:uppercase">
           {ingredient.name}
           {ingredient.optional && (
             <span className="ml-2 text-[11px] uppercase tracking-wider text-stone">

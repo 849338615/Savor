@@ -29,6 +29,7 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
         <RecipePhoto recipe={recipe} />
         <BookmarkToggle
           recipeId={recipe.id}
+          summary={recipe}
           size={13}
           visualSize={28}
           onScrim

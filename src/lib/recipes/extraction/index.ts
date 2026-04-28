@@ -22,18 +22,23 @@ import {
   extractReadableText,
   fetchHtml,
 } from "./fetch";
-import { parseJsonLdRecipe } from "./jsonld";
+import { parseJsonLdRecipe, type RawJsonLdRecipe } from "./jsonld";
 import { extractRecipeWithLlm } from "./llmExtractor";
+import { parseMicrodataRecipe } from "./microdata";
 import {
   isIngredientSectionHeader,
   parseIngredientLine,
 } from "./parseIngredient";
-import { needsNormalization, normalizeCandidate } from "./normalize";
+import {
+  needsNormalization,
+  normalizeCandidate,
+  shouldReconcileWithPageText,
+} from "./normalize";
 import { isBlockedDomain, scoreCandidate, type ScoredCandidate } from "./scoring";
 import { searchWebUrls, type SearchHit } from "./search";
 import { TtlCache } from "./cache";
 import type { ExtractedCandidate, ExtractedIngredient } from "./types";
-import { validateCandidate } from "./validate";
+import { validateCandidate, verifyAgainstSource } from "./validate";
 
 const SEARCH_CACHE = new TtlCache<ScoredCandidate[]>(64, 5 * 60 * 1000); // 5 min
 const RECIPE_CACHE = new TtlCache<ExtractedCandidate>(256, 24 * 60 * 60 * 1000); // 24 h
@@ -72,11 +77,23 @@ export async function searchAndExtractTopRecipes(
     (hit) => extractFromHit(hit, opts.allowLlmFallback ?? true, false),
   );
 
-  const scored = candidates
-    .filter((c): c is ExtractedCandidate => c !== null)
-    .map(scoreCandidate)
-    .filter((s): s is ScoredCandidate => s !== null)
-    .sort((a, b) => b.score - a.score);
+  // Two different search hits can resolve to the same canonical URL — Google
+  // sometimes lists a tracking-suffixed URL alongside the bare one, and any
+  // redirect chain (`/r/abc` → final post) collapses post-extraction. Without
+  // a dedup pass, the UI ends up rendering two `<li>`s with the same
+  // `recipe.id` and React rightly complains about duplicate keys. Keep the
+  // highest-scoring copy of each canonical URL.
+  const byUrl = new Map<string, ScoredCandidate>();
+  for (const c of candidates) {
+    if (!c) continue;
+    const scored = scoreCandidate(c);
+    if (!scored) continue;
+    const existing = byUrl.get(scored.candidate.url);
+    if (!existing || scored.score > existing.score) {
+      byUrl.set(scored.candidate.url, scored);
+    }
+  }
+  const scored = Array.from(byUrl.values()).sort((a, b) => b.score - a.score);
 
   SEARCH_CACHE.set(cacheKey, scored);
   return scored.slice(0, limit);
@@ -92,23 +109,22 @@ export async function extractOne(
     searchRank?: number;
     allowLlmFallback?: boolean;
     /**
-     * Always run the LLM normalizer regardless of the heuristic gate.
-     * Used by the recipe-detail path where the user is paying close attention
-     * and a small per-open Haiku cost (cached 24h) is worth predictable polish.
+     * @deprecated Retained for API stability. The `needsNormalization` gate
+     * is now the single source of truth on both search and detail paths;
+     * this flag has no effect.
      */
     forceNormalize?: boolean;
   } = {},
 ): Promise<ExtractedCandidate | null> {
   if (isBlockedDomain(url)) return null;
 
-  const forceNormalize = opts.forceNormalize ?? false;
-
   const cached = RECIPE_CACHE.get(url);
   if (cached) {
-    // If the cache holds a raw JSON-LD candidate from an earlier search-path
-    // extraction (gate didn't fire) and we now want forced normalization
-    // (detail path), upgrade the cached entry in place.
-    if (forceNormalize && cached.via === "json-ld") {
+    // If the cache holds a raw JSON-LD candidate that the gate would NOW flag
+    // (e.g., because the gate has been extended since extraction time, or the
+    // candidate has artifacts the search-path gate missed), upgrade in place.
+    // No upgrade is run when the cached candidate is already clean.
+    if (cached.via === "json-ld" && needsNormalization(cached)) {
       try {
         const normalized = await normalizeCandidate(cached);
         cached.title = normalized.title || cached.title;
@@ -130,7 +146,8 @@ export async function extractOne(
     snippet: "",
     rank: opts.searchRank ?? 99,
   };
-  return extractFromHit(hit, opts.allowLlmFallback ?? true, forceNormalize);
+  // forceNormalize is deprecated/ignored; gate decides on both paths.
+  return extractFromHit(hit, opts.allowLlmFallback ?? true, false);
 }
 
 /* ------------------------------ pipeline core ----------------------------- */
@@ -163,51 +180,37 @@ async function extractFromHit(
     jsonLd.ingredients.length >= 3 &&
     jsonLd.instructions.length >= 2
   ) {
-    const candidate: ExtractedCandidate = {
-      url: canonical,
+    const candidate = buildCandidateFromStructured({
+      rec: jsonLd,
+      canonical,
       source,
       searchRank: hit.rank,
-      title: cleanRecipeTitle(jsonLd.name ?? extractPageTitle(html) ?? hit.title),
-      description: jsonLd.description,
-      image: jsonLd.image ?? ogImage,
-      totalTimeMinutes:
-        jsonLd.totalTimeMinutes ??
-        sumDefined(jsonLd.prepTimeMinutes, jsonLd.cookTimeMinutes),
-      servings: jsonLd.recipeYield,
-      ingredients: jsonLd.ingredients,
-      instructions: jsonLd.instructions,
-      tags: deriveTags({
-        category: jsonLd.category,
-        cuisine: jsonLd.cuisine,
-        keywords: jsonLd.keywords,
-      }),
-      aggregateRating: jsonLd.aggregateRating,
+      hitTitle: hit.title,
+      ogImage,
+      html,
       via: "json-ld",
-    };
+    });
+    return await finalizeStructured(candidate, html, hit.url, canonical, forceNormalize);
+  }
 
-    // Cleanup pass: always on the detail path (forceNormalize), gated on the
-    // search path. The gate is a heuristic and misses real-world quirks
-    // (footnote-style "(Note 1)" refs, dual-unit amounts) — the detail path
-    // always normalizes so the user-attention surface stays polished.
-    if (forceNormalize || needsNormalization(candidate)) {
-      try {
-        const normalized = await normalizeCandidate(candidate);
-        candidate.title = normalized.title || candidate.title;
-        candidate.ingredients = normalized.ingredients;
-        candidate.instructions = normalized.instructions;
-        candidate.via = "json-ld+normalized";
-      } catch {
-        /* keep raw — never fail extraction on normalization error */
-      }
-    }
-
-    if (!validateCandidate(candidate)) {
-      NEGATIVE_CACHE.set(hit.url, true);
-      return null;
-    }
-
-    RECIPE_CACHE.set(canonical, candidate);
-    return candidate;
+  // Second-tier structured: HTML5 microdata (older blogs, classic WP Recipe Maker).
+  const microdata = parseMicrodataRecipe(html);
+  if (
+    microdata &&
+    microdata.ingredients.length >= 3 &&
+    microdata.instructions.length >= 2
+  ) {
+    const candidate = buildCandidateFromStructured({
+      rec: microdata,
+      canonical,
+      source,
+      searchRank: hit.rank,
+      hitTitle: hit.title,
+      ogImage,
+      html,
+      via: "microdata",
+    });
+    return await finalizeStructured(candidate, html, hit.url, canonical, forceNormalize);
   }
 
   // Slow path: LLM
@@ -250,6 +253,23 @@ async function extractFromHit(
       via: "llm",
     };
 
+    // Source-grounded coverage check. The LLM may hallucinate a quantity,
+    // drop a step, or pull an ingredient from a "you may also like" carousel.
+    // If coverage is poor: drop hard on the detail path (the user is looking
+    // at one recipe and we shouldn't show garbage); on the search path,
+    // downgrade to "llm-unverified" so a verified competitor wins in scoring.
+    const coverage = verifyAgainstSource(candidate, text);
+    if (!coverage.passed) {
+      if (
+        forceNormalize &&
+        (coverage.ingredientsCovered < 0.5 || coverage.stepsCovered < 0.5)
+      ) {
+        NEGATIVE_CACHE.set(hit.url, true);
+        return null;
+      }
+      candidate.via = "llm-unverified";
+    }
+
     if (!validateCandidate(candidate)) {
       NEGATIVE_CACHE.set(hit.url, true);
       return null;
@@ -263,6 +283,92 @@ async function extractFromHit(
   }
 }
 
+/* ----------------- structured-data helpers (JSON-LD + microdata) ----------------- */
+
+interface StructuredBuildOpts {
+  rec: RawJsonLdRecipe;
+  canonical: string;
+  source: string;
+  searchRank: number;
+  hitTitle: string;
+  ogImage?: string;
+  html: string;
+  via: "json-ld" | "microdata";
+}
+
+function buildCandidateFromStructured(o: StructuredBuildOpts): ExtractedCandidate {
+  return {
+    url: o.canonical,
+    source: o.source,
+    searchRank: o.searchRank,
+    title: cleanRecipeTitle(o.rec.name ?? extractPageTitle(o.html) ?? o.hitTitle),
+    description: o.rec.description,
+    image: o.rec.image ?? o.ogImage,
+    totalTimeMinutes:
+      o.rec.totalTimeMinutes ??
+      sumDefined(o.rec.prepTimeMinutes, o.rec.cookTimeMinutes),
+    servings: o.rec.recipeYield,
+    ingredients: o.rec.ingredients,
+    instructions: o.rec.instructions,
+    tags: deriveTags({
+      category: o.rec.category,
+      cuisine: o.rec.cuisine,
+      keywords: o.rec.keywords,
+    }),
+    aggregateRating: o.rec.aggregateRating,
+    via: o.via,
+  };
+}
+
+async function finalizeStructured(
+  candidate: ExtractedCandidate,
+  html: string,
+  hitUrl: string,
+  canonical: string,
+  _forceNormalize: boolean,
+): Promise<ExtractedCandidate | null> {
+  // Cleanup pass:
+  //   - Conditionally via the `needsNormalization` gate. The gate covers
+  //     dirty strings, parser artifacts, lost section grouping, etc. — i.e.
+  //     anything an LLM cleanup would actually fix. If the gate says no, the
+  //     output is already clean and an LLM call is wasted.
+  //   - On known-messy hosts (RecipeTinEats, Half Baked Harvest, Pioneer
+  //     Woman, …) or when the structured data itself looks broken
+  //     (`shouldReconcileWithPageText`), pass the page text as a
+  //     reconciliation source so the normalizer can fix wrong/lossy fields
+  //     against the actual recipe content.
+  // (`_forceNormalize` retained in the signature for API stability; the
+  // gate now decides on both search and detail paths.)
+  const reconcile =
+    candidate.via === "json-ld" &&
+    shouldReconcileWithPageText(candidate, canonical);
+
+  if (needsNormalization(candidate) || reconcile) {
+    try {
+      const pageText = reconcile ? extractReadableText(html) : undefined;
+      const normalized = await normalizeCandidate(candidate, pageText);
+      candidate.title = normalized.title || candidate.title;
+      candidate.ingredients = normalized.ingredients;
+      candidate.instructions = normalized.instructions;
+      candidate.via = reconcile
+        ? "json-ld+reconciled"
+        : candidate.via === "microdata"
+          ? "microdata+normalized"
+          : "json-ld+normalized";
+    } catch {
+      /* keep raw — never fail extraction on normalization error */
+    }
+  }
+
+  if (!validateCandidate(candidate)) {
+    NEGATIVE_CACHE.set(hitUrl, true);
+    return null;
+  }
+
+  RECIPE_CACHE.set(canonical, candidate);
+  return candidate;
+}
+
 /**
  * Strip site decorations and marketing trailers from titles.
  *   "Best Homemade Ramen Recipe | Bon Appétit"  → "Best Homemade Ramen"
@@ -273,12 +379,19 @@ async function extractFromHit(
  */
 function cleanRecipeTitle(t: string): string {
   return t
-    // Trailer ending in ! or ? after any dash/pipe — almost always marketing.
-    .replace(/\s*[\|–—\-]\s*[^\|–—\-]+[!?]\s*$/, "")
+    // Trailer ending in ! or ? after en/em-dash or pipe (no hyphen here, since
+    // hyphens commonly appear inside compound recipe terms — Pan-Sear,
+    // Stir-Fry, Sous-Vide, Air-Fried, Slow-Cook).
+    .replace(/\s*[\|–—]\s*[^\|–—]+[!?]\s*$/, "")
+    // Same trailer pattern with a regular hyphen — but ONLY when the hyphen has
+    // real whitespace on both sides ("Steak - Like a Chef!"), so we don't eat
+    // half a compound word ("Pan-Sear Steak").
+    .replace(/\s+-\s+[^-]+[!?]\s*$/, "")
     // Trailer after en/em-dash or pipe with non-empty suffix (site name).
     .replace(/\s*[\|–—]\s*[^\|–—]{2,40}$/, "")
-    // " - SiteName" with uppercase suffix.
-    .replace(/\s*-\s*[A-Z][^-]{2,40}$/, "")
+    // " - SiteName" with uppercase suffix. Same whitespace rule as above:
+    // require real spaces around the hyphen so compound words survive.
+    .replace(/\s+-\s+[A-Z][^-]{2,40}$/, "")
     // Trailing " Recipe" / " (Easy)" / " (Quick)" cruft.
     .replace(/\s+Recipe\s*$/i, "")
     .replace(/\s*\((?:easy|quick|simple|best|ultimate)\)\s*$/i, "")

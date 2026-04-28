@@ -21,8 +21,10 @@ import type {
  * a recipe is normalized at most once per server instance per day.
  */
 
-const NORMALIZE_MODEL =
-  process.env.RECIPE_NORMALIZE_MODEL || "claude-haiku-4-5-20251001";
+// Hardcoded — Opus is intentionally NOT a supported option here. The
+// normalizer runs once per recipe-detail open, but for cost predictability
+// we keep both LLM hops on Haiku.
+const NORMALIZE_MODEL = "claude-haiku-4-5-20251001";
 
 let _client: Anthropic | null = null;
 function client(): Anthropic {
@@ -44,6 +46,13 @@ function client(): Anthropic {
  *   - section labels embedded in ingredient lines
  *   - very long titles (site decorations not stripped)
  *   - very long step bodies with no internal sentence boundary
+ *   - parser artifacts in ingredient names (stray commas, parens, slashes)
+ *
+ * This gate is the single source of truth for "do we need to spend on a
+ * Haiku call?" — used by both the search path AND the detail path. The
+ * detail path no longer unconditionally normalizes; if this gate returns
+ * false, the JSON-LD output is already clean and an LLM call would be
+ * wasted (the model's job in that case would be to return identical input).
  */
 export function needsNormalization(c: ExtractedCandidate): boolean {
   if (looksDirty(c.title)) return true;
@@ -52,6 +61,14 @@ export function needsNormalization(c: ExtractedCandidate): boolean {
   for (const ing of c.ingredients) {
     if (looksDirty(ing.name) || (ing.note && looksDirty(ing.note))) return true;
     if (/^for (?:the )?[^:]{2,40}:?\s*$/i.test(ing.name)) return true;
+    // Parser artifacts: stray commas/parens/slashes in the name mean the
+    // post-comma or parenthetical extraction didn't run cleanly. The
+    // ingredient parser is conservative on purpose — when both a paren
+    // and a post-comma modifier exist, residue stays in the name. The
+    // normalizer can split these properly.
+    if (/[,()]|^[/\\\-]|[/\\]\s*$/.test(ing.name)) return true;
+    // Dual-unit residue ("/ 5 tbsp" leaked into name).
+    if (/^\s*\//.test(ing.name)) return true;
   }
 
   let untitledLong = 0;
@@ -202,13 +219,59 @@ interface NormalizedRecipe {
   instructions: ExtractedInstruction[];
 }
 
+/**
+ * Hosts whose JSON-LD is known to be lossy or unreliable (e.g.,
+ * `recipeInstructions` published as one giant blob). On these we always
+ * pass the page text to the normalizer so it can reconcile the structured
+ * data against the actual recipe content.
+ */
+const KNOWN_MESSY_HOSTS = new Set([
+  "recipetineats.com",
+  "www.recipetineats.com",
+  "halfbakedharvest.com",
+  "www.halfbakedharvest.com",
+  "thepioneerwoman.com",
+  "www.thepioneerwoman.com",
+  "minimalistbaker.com",
+  "www.minimalistbaker.com",
+  "cookieandkate.com",
+  "www.cookieandkate.com",
+]);
+
+/**
+ * Decide whether to send the page text to the normalizer. Fires on
+ * known-messy hosts, OR when the candidate itself shows signs of bad
+ * structured data (one giant blob instruction, ingredient/step mismatch).
+ */
+export function shouldReconcileWithPageText(
+  c: ExtractedCandidate,
+  url: string,
+): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (KNOWN_MESSY_HOSTS.has(host)) return true;
+  } catch {
+    /* ignore */
+  }
+  // A single instruction over ~1.2KB almost always means the source publishes
+  // a blob `recipeInstructions` that the normalizer will need to split.
+  if (c.instructions.some((i) => i.text.length > 1200)) return true;
+  // Many ingredients but very few steps usually means we lost the steps.
+  if (c.ingredients.length >= 10 && c.instructions.length <= 3) return true;
+  return false;
+}
+
 export async function normalizeCandidate(
   c: ExtractedCandidate,
+  pageText?: string,
 ): Promise<NormalizedRecipe> {
   // Send only the data we want cleaned — not the full HTML. This keeps the
   // call cheap (a handful of KB) and the model focused on the structuring
   // task rather than re-extracting from page noise.
-  const payload = {
+  // When `pageText` is provided, it accompanies the structured candidate as
+  // a reconciliation source: the model fixes wrong/lossy fields against it
+  // (but still must not invent ingredients or steps that aren't there).
+  const payload: Record<string, unknown> = {
     title: c.title,
     ingredients: c.ingredients.map((i) => stringifyIngredient(i)),
     instructions: c.instructions.map((s) => ({
@@ -217,6 +280,13 @@ export async function normalizeCandidate(
       text: s.text,
     })),
   };
+  if (pageText) {
+    payload.pageText = pageText.slice(0, 12_000);
+  }
+
+  const userMessage = pageText
+    ? `The structured recipe candidate below was extracted automatically and may be wrong or lossy. Compare it against the page text and FIX any places where the structured data is incorrect. Specifically: if instructions are mashed into one blob, split them into discrete steps; if the title carries decoration ("| Site Name", marketing trailers), clean it; if an ingredient name is malformed, repair it from the page text. CRITICAL: do not invent any ingredient or step that is not in the page text. Preserve the author's wording.\n\n${JSON.stringify(payload, null, 2)}`
+    : `Normalize this recipe:\n\n${JSON.stringify(payload, null, 2)}`;
 
   const response = await client().messages.create({
     model: NORMALIZE_MODEL,
@@ -225,7 +295,10 @@ export async function normalizeCandidate(
       {
         type: "text",
         text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
+        // 1h TTL: 2x cache-write cost vs default 5min, but 0.1x cache-read
+        // cost. Wins as long as reads outnumber writes within the hour —
+        // typical for any search session with multiple recipes.
+        cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],
     output_config: {
@@ -237,7 +310,7 @@ export async function normalizeCandidate(
     messages: [
       {
         role: "user",
-        content: `Normalize this recipe:\n\n${JSON.stringify(payload, null, 2)}`,
+        content: userMessage,
       },
     ],
   });

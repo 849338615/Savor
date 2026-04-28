@@ -1,35 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface CookingControlsProps {
   canPrev: boolean;
   canNext: boolean;
   isLast: boolean;
-  recipeSlug: string;
   onPrev: () => void;
   onNext: () => void;
+  onFinish: () => void;
 }
 
 export function CookingControls({
   canPrev,
   canNext,
   isLast,
-  recipeSlug,
   onPrev,
   onNext,
+  onFinish,
 }: CookingControlsProps) {
-  const router = useRouter();
-
-  const finish = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.replace(`/recipe/${recipeSlug}`);
-    }
-  };
-
   return (
     <>
       <button
@@ -47,7 +36,7 @@ export function CookingControls({
       {isLast ? (
         <button
           type="button"
-          onClick={finish}
+          onClick={onFinish}
           className="h-[52px] flex-1 rounded-[var(--radius-pill)] bg-forest text-[15px] font-semibold text-soft-white transition-colors hover:bg-[var(--bg-brand-hover)] active:bg-[var(--bg-brand-pressed)]"
         >
           Finish

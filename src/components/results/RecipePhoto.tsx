@@ -19,6 +19,13 @@ const FOOD_GRADIENTS = [
 interface RecipePhotoProps {
   recipe: Pick<RecipeSummary, "id" | "title" | "tags" | "gradient" | "thumbnail">;
   className?: string;
+  /**
+   * Render hint for the browser's responsive-image picker. The recipe-detail
+   * hero gets `"hero"` so it preloads eagerly with high fetch priority and
+   * declares itself as full-viewport-width; cards in the search grid stay on
+   * the default `"thumbnail"` and lazy-load.
+   */
+  variant?: "thumbnail" | "hero";
   children?: React.ReactNode;
 }
 
@@ -27,7 +34,12 @@ interface RecipePhotoProps {
  * shows during image load and stays as a graceful fallback when a recipe site
  * blocks hotlinks or the URL 404s. Real photo fades in on top once it loads.
  */
-export function RecipePhoto({ recipe, className, children }: RecipePhotoProps) {
+export function RecipePhoto({
+  recipe,
+  className,
+  variant = "thumbnail",
+  children,
+}: RecipePhotoProps) {
   const [imageOk, setImageOk] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
@@ -38,6 +50,7 @@ export function RecipePhoto({ recipe, className, children }: RecipePhotoProps) {
   const gradient = idx !== null ? FOOD_GRADIENTS[idx] : undefined;
   const showImage = !!recipe.thumbnail && imageOk;
   const showIllustration = !showImage && idx === null;
+  const isHero = variant === "hero";
 
   return (
     <div
@@ -53,8 +66,17 @@ export function RecipePhoto({ recipe, className, children }: RecipePhotoProps) {
         <img
           src={recipe.thumbnail}
           alt=""
-          loading="lazy"
+          loading={isHero ? "eager" : "lazy"}
           decoding="async"
+          // Hero is the LCP element on the recipe-detail route — hint the
+          // browser to fetch it ahead of below-the-fold work.
+          fetchPriority={isHero ? "high" : "auto"}
+          // The hero spans the full app shell (max ~480px) at 1x but up to
+          // 3x on retina mobile; cards are roughly half that. Letting the
+          // browser know lets it pick the right pixel-density variant when
+          // the source supports `srcset` (we don't yet, but this also nudges
+          // some image CDNs to serve a sharper crop).
+          sizes={isHero ? "(max-width: 480px) 100vw, 480px" : "(max-width: 480px) 50vw, 240px"}
           referrerPolicy="no-referrer"
           onLoad={() => setLoaded(true)}
           onError={() => setImageOk(false)}

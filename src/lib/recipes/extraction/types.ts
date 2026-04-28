@@ -51,5 +51,12 @@ export interface ExtractedCandidate {
   aggregateRating?: AggregateRating;
 
   /** Which path produced this — useful for debugging and observability. */
-  via: "json-ld" | "json-ld+normalized" | "llm";
+  via:
+    | "json-ld"
+    | "json-ld+normalized"
+    | "json-ld+reconciled"
+    | "microdata"
+    | "microdata+normalized"
+    | "llm"
+    | "llm-unverified";
 }

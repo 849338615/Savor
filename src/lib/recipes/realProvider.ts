@@ -7,6 +7,7 @@ import type {
   Difficulty,
 } from "./types";
 import { extractOne, searchAndExtractTopRecipes } from "./extraction";
+import { extractStepDurationSeconds } from "./extraction/parseDuration";
 import type { ExtractedCandidate, ExtractedIngredient } from "./extraction/types";
 import type { ScoredCandidate } from "./extraction/scoring";
 import { decodeRecipeId, encodeRecipeId, gradientIndexForUrl } from "./idEncoding";
@@ -108,12 +109,14 @@ function toRecipe(c: ExtractedCandidate): Recipe {
       title = usesGoodName ? name! : `Step ${index}`;
     }
 
+    const instruction = inst.text.trim();
     return {
       id: `s${index}`,
       index,
       section: inst.section,
       title,
-      instruction: inst.text.trim(),
+      instruction,
+      durationSeconds: extractStepDurationSeconds(instruction),
     } satisfies Step;
   });
 

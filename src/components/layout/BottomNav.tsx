@@ -2,29 +2,44 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { Home, Bookmark, ChefHat, User } from "lucide-react";
 import { useCookingSession } from "@/hooks/useCookingSession";
+import { useLastResults, buildResultsHref } from "@/hooks/useLastResults";
+import { useNav, sectionForPath, type Section } from "@/hooks/useNav";
 import { cn } from "@/lib/utils";
 
 type Item = {
   href: string;
   label: string;
   icon: typeof Home;
+  section?: Section;
   match: (p: string) => boolean;
 };
 
 const STATIC_ITEMS: Item[] = [
-  { href: "/", label: "Home", icon: Home, match: (p) => p === "/" },
+  {
+    href: "/",
+    label: "Home",
+    icon: Home,
+    section: "home",
+    // Once the user has searched, /results is their home — keep the Home
+    // tab highlighted while they browse results so the IA stays coherent
+    // with the redirected href below.
+    match: (p) => p === "/" || p.startsWith("/results"),
+  },
   {
     href: "/saved",
     label: "Saved",
     icon: Bookmark,
+    section: "saved",
     match: (p) => p.startsWith("/saved"),
   },
   {
     href: "/profile",
     label: "Profile",
     icon: User,
+    section: "profile",
     match: (p) => p.startsWith("/profile"),
   },
 ];
@@ -39,10 +54,27 @@ export function BottomNav() {
   const recipeSlug = useCookingSession((s) => s.recipeSlug);
   const recipeId = useCookingSession((s) => s.recipeId);
   const hasHydrated = useCookingSession((s) => s.hasHydrated);
+  const lastQ = useLastResults((s) => s.q);
+  const lastTag = useLastResults((s) => s.tag);
+  const lastHydrated = useLastResults((s) => s.hasHydrated);
+  const setSection = useNav((s) => s.setSection);
+
+  // Keep the active section in sync with the URL. Direct nav, deep links,
+  // and back/forward all flow through here. /recipe/* paths intentionally
+  // return null so the user keeps the section they entered from.
+  useEffect(() => {
+    const next = sectionForPath(pathname);
+    if (next) setSection(next);
+  }, [pathname, setSection]);
 
   if (pathname.endsWith("/cook")) return null;
 
-  const items = [...STATIC_ITEMS];
+  const items = STATIC_ITEMS.map((item) => {
+    if (item.label !== "Home") return item;
+    if (!lastHydrated) return item;
+    if (!lastQ && !lastTag) return item;
+    return { ...item, href: buildResultsHref(lastQ, lastTag) };
+  });
   if (hasHydrated && recipeId && recipeSlug) {
     items.splice(2, 0, {
       href: `/recipe/${recipeSlug}/cook`,
@@ -68,6 +100,9 @@ export function BottomNav() {
             <li key={item.label} className="flex-1">
               <Link
                 href={item.href}
+                onClick={() => {
+                  if (item.section) setSection(item.section);
+                }}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors",

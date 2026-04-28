@@ -48,25 +48,25 @@ function ResultsLoadingShell({
   const status = buildStatus(query, tag);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-1 flex-col">
       <TopBar title="Results" />
 
-      <div className="px-5">
+      <div className="px-6 pt-1">
         <SearchBar defaultValue={query} />
       </div>
 
       <Suspense fallback={<div className="h-10" />}>
-        <div className="mt-4 px-5">
+        <div className="mt-4 px-6">
           <FilterChips />
         </div>
       </Suspense>
 
-      <section className="flex flex-1 flex-col px-5 pt-7 pb-8">
+      <section className="flex flex-1 flex-col px-6 pt-8 pb-8">
         <h2 className="font-display text-[22px] font-semibold leading-tight text-ink">
           {headline}
         </h2>
         <p
-          className="mt-1.5 flex items-center gap-2 text-[12px] text-stone"
+          className="mt-2 flex items-center gap-2 text-[12px] text-stone"
           role="status"
           aria-live="polite"
         >
@@ -74,7 +74,7 @@ function ResultsLoadingShell({
           {status}
         </p>
 
-        <ul className="mt-4 flex flex-col gap-3">
+        <ul className="mt-5 flex flex-col gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <li key={i}>
               <RecipeResultRowSkeleton delayMs={i * 80} />

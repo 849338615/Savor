@@ -9,13 +9,20 @@ import { RecipePhoto } from "./RecipePhoto";
 interface RecipeCardProps {
   recipe: RecipeSummary & { servings?: number };
   variant?: "grid" | "list";
+  /** Forwarded to BookmarkToggle. Set on the Saved tab so unsaving asks
+   *  for confirmation instead of disappearing the card on a stray tap. */
+  confirmRemove?: boolean;
 }
 
 /**
  * grid: square photo on top, single-line title beneath. Used in 2-col grids.
  * list: full-width 5/3 photo on top, multi-line title + meta. Used on Saved.
  */
-export function RecipeCard({ recipe, variant = "grid" }: RecipeCardProps) {
+export function RecipeCard({
+  recipe,
+  variant = "grid",
+  confirmRemove = false,
+}: RecipeCardProps) {
   return (
     <Link
       href={`/recipe/${recipe.slug}`}
@@ -30,9 +37,11 @@ export function RecipeCard({ recipe, variant = "grid" }: RecipeCardProps) {
         <RecipePhoto recipe={recipe} />
         <BookmarkToggle
           recipeId={recipe.id}
+          summary={recipe}
           size={variant === "grid" ? 14 : 16}
           visualSize={variant === "grid" ? 28 : 36}
           onScrim
+          confirmRemove={confirmRemove}
           className={cn(
             "absolute",
             variant === "grid" ? "right-0 top-0" : "right-1 top-1",

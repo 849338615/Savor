@@ -1,40 +1,32 @@
-import Image from "next/image";
 import { Suspense } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { FilterChips } from "@/components/search/FilterChips";
+import { WelcomeHero } from "@/components/home/WelcomeHero";
+import { HomeAmbience } from "@/components/home/HomeAmbience";
 
 /**
- * Idle home. The brand moment lives here — quiet mark, editorial headline,
- * supporting line. No recipes are previewed; the user picks a mood or types
- * a search and we route them to /results. The action zone is anchored to the
- * bottom so the search field sits where the thumb naturally rests.
+ * Idle home. Brand identity is carried by the ambient layer (warm bloom,
+ * sage haze, half-leaf signature) and by the editorial hero — no corner
+ * mark needed. A time-aware welcome rotates between visits; chips and
+ * the search bar route the user to /results.
  */
 export default function Home() {
   return (
-    <div className="relative flex flex-1 flex-col">
-      {/* Quiet brand anchor */}
-      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]">
-        <Image
-          src="/brand/savor-icon-mark.png"
-          alt="Savor"
-          width={1254}
-          height={1254}
-          className="h-9 w-9 object-contain"
-          priority
-        />
-      </header>
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      <HomeAmbience />
 
-      {/* Editorial hero */}
-      <section className="flex flex-col gap-5 px-6 pt-12">
-        <p className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
-          <span aria-hidden className="block h-px w-8 bg-forest/45" />
-          Tonight
-        </p>
-        <h1 className="font-display text-[44px] font-semibold leading-[1.05] tracking-[-0.015em] text-ink">
-          What&rsquo;s for
-          <br />
-          dinner?
-        </h1>
+      {/* Editorial hero — sits 8.5rem (136px) below the top edge, or
+          further down on devices whose safe-area inset is larger.
+          Calibrated for a content-only top (no corner mark): roughly
+          19% of phone-card height, the editorial sweet spot where the
+          lockup feels grounded without crowding the dynamic island.
+          Inline style — Tailwind v4's arbitrary-value parser is
+          unreliable with nested env()/max() calls. */}
+      <section
+        className="relative z-10 flex flex-col gap-7 px-6"
+        style={{ paddingTop: "max(env(safe-area-inset-top, 1rem), 8.5rem)" }}
+      >
+        <WelcomeHero />
         <p className="max-w-[30ch] text-[15px] leading-[1.6] text-stone text-balance">
           Search a dish, an ingredient, or pick a mood. We&rsquo;ll guide you,
           one step at a time.
@@ -42,17 +34,18 @@ export default function Home() {
       </section>
 
       {/* Spacer pushes the action zone to the bottom of the viewport */}
-      <div className="flex-1" aria-hidden />
+      <div className="flex-1 min-h-10" aria-hidden />
 
-      {/* Anchored action zone */}
-      <section className="flex flex-col gap-3 px-6 pb-3 pt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
+      {/* Anchored action zone — caption and chips cluster tight, search
+          breathes alone as the primary action */}
+      <section className="relative z-10 flex flex-col px-6 pb-5 pt-6">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
           Try a mood
         </p>
         <Suspense fallback={<div className="h-9" />}>
           <FilterChips />
         </Suspense>
-        <div className="pt-2">
+        <div className="pt-6">
           <SearchBar size="lg" />
         </div>
       </section>

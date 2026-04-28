@@ -36,6 +36,7 @@ interface CookingSessionState {
   setServings: (recipeId: string, n: number) => void;
   toggleLargeText: () => void;
   reset: () => void;
+  setHasHydrated: (v: boolean) => void;
 
   ensureTimer: (recipeId: string, stepIndex: number, durationSec: number) => void;
   startTimer: (recipeId: string, stepIndex: number) => void;
@@ -105,6 +106,8 @@ export const useCookingSession = create<CookingSessionState>()(
         })),
 
       toggleLargeText: () => set((s) => ({ largeText: !s.largeText })),
+
+      setHasHydrated: (v) => set({ hasHydrated: v }),
 
       reset: () =>
         set({
@@ -220,7 +223,10 @@ export const useCookingSession = create<CookingSessionState>()(
         largeText: s.largeText,
       }),
       onRehydrateStorage: () => (state) => {
-        if (state) state.hasHydrated = true;
+        // Direct mutation here would bypass zustand's notify, leaving every
+        // hasHydrated-gated component stuck on its skeleton. Always go
+        // through set, which is what setHasHydrated wraps.
+        state?.setHasHydrated(true);
       },
     },
   ),

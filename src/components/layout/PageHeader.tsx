@@ -15,7 +15,7 @@ export function PageHeader({ title, rightSlot, className }: PageHeaderProps) {
   return (
     <header
       className={cn(
-        "flex items-center justify-between gap-3 px-5 pb-2 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]",
+        "flex items-center justify-between gap-3 px-6 pb-3 pt-[max(env(safe-area-inset-top,1rem),3.5rem)]",
         className,
       )}
     >

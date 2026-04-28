@@ -1,12 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /**
- * LLM fallback for recipe extraction. Used only when JSON-LD parsing fails.
+ * LLM fallback for recipe extraction. Used only when JSON-LD AND microdata
+ * parsing both fail.
  *
- * Defaults to `claude-opus-4-7`. For high-volume extraction you can override
- * via the `RECIPE_LLM_MODEL` env var (e.g. `claude-haiku-4-5`) — extraction is
- * a structured task and a smaller model is plenty capable. Opus is the safe
- * default; haiku is the cost-optimized choice you opt into.
+ * Hardcoded to Claude Haiku 4.5 (`claude-haiku-4-5-20251001`). Each search
+ * fetches up to 30 candidate URLs in parallel; without JSON-LD, every one
+ * of them would otherwise need an Opus-class call. Haiku handles structured
+ * extraction with a strong prompt cleanly at ~1/15th the price, so we
+ * intentionally do NOT expose an env-var override — the cost ceiling matters
+ * more than upgrading individual sources.
  *
  * No thinking (extraction does not benefit), structured JSON output via
  * `output_config.format`, and prompt caching on the system prefix so repeat
@@ -150,9 +153,101 @@ Output:
   "tags": ["bread", "side", "comfort", "baking", "quick"]
 }
 
+# Worked example — extreme narrative-to-recipe ratio (story blog)
+
+Input (~3,000 words; only the recipe-relevant portion is reproduced; assume the rest is narrative + chrome):
+
+"Grandma's Sunday Pot Roast - Heartland Kitchen … Skip to recipe ↓ …
+[2,400 words about my Oklahoma childhood, the smell of beef in the kitchen,
+why we don't make pot roast like we used to, a sponsored detour about a knife
+brand, three paragraphs about Aunt Linda's funeral and how she always doubled
+the carrots, an FAQ asking 'Can I use a slow cooker? Yes — cook on low for 8
+hours.', a Pinterest pin prompt, an email signup, a 'shop my kitchen'
+affiliate block, and finally:]
+
+Yield: 6 servings · Total time: 3 hours 30 minutes
+
+Ingredients
+- 1 (4 lb) chuck roast
+- 2 tbsp olive oil
+- Salt and pepper
+- 1 large yellow onion, quartered
+- 4 carrots, cut into 2-inch pieces
+- 4 cloves garlic, smashed
+- 2 cups beef broth
+- 1 cup dry red wine
+- 2 sprigs fresh rosemary
+- 2 sprigs fresh thyme
+
+Instructions
+1. Preheat oven to 325°F.
+2. Pat roast dry, season generously with salt and pepper.
+3. Heat oil in a Dutch oven over medium-high. Sear roast on all sides, about 4 min per side.
+4. Add onion, carrots, garlic. Pour in broth and wine.
+5. Tuck herbs around the roast. Cover.
+6. Transfer to oven, braise 3 hours until fork-tender.
+7. Rest 15 minutes before slicing against the grain.
+
+[Then 600 words of comments and 'related recipes you'll love']"
+
+CORRECT output:
+{
+  "title": "Grandma's Sunday Pot Roast",
+  "description": "A 3.5-hour braised chuck roast with carrots, onions, garlic, red wine, and fresh herbs.",
+  "totalTimeMinutes": 210,
+  "servings": 6,
+  "ingredients": [
+    "1 (4 lb) chuck roast",
+    "2 tbsp olive oil",
+    "Salt and pepper",
+    "1 large yellow onion, quartered",
+    "4 carrots, cut into 2-inch pieces",
+    "4 cloves garlic, smashed",
+    "2 cups beef broth",
+    "1 cup dry red wine",
+    "2 sprigs fresh rosemary",
+    "2 sprigs fresh thyme"
+  ],
+  "instructions": [
+    { "text": "Preheat oven to 325°F." },
+    { "text": "Pat roast dry, season generously with salt and pepper." },
+    { "text": "Heat oil in a Dutch oven over medium-high. Sear roast on all sides, about 4 min per side." },
+    { "text": "Add onion, carrots, garlic. Pour in broth and wine." },
+    { "text": "Tuck herbs around the roast. Cover." },
+    { "text": "Transfer to oven, braise 3 hours until fork-tender." },
+    { "text": "Rest 15 minutes before slicing against the grain." }
+  ],
+  "tags": ["beef", "comfort", "weekend", "dinner", "american"]
+}
+
+What was DROPPED:
+  - The Oklahoma childhood story → not part of the recipe.
+  - "Aunt Linda doubled the carrots" → anecdote, NOT an instruction. Do not
+    add a step "(optional: double the carrots)".
+  - The FAQ about slow cooker → describes a *variant*, not the recipe shown.
+  - The sponsored knife block, affiliate "shop my kitchen", comments,
+    related-recipes list, email signup, Pinterest pin → all noise.
+  - "Skip to recipe ↓" → navigation chrome.
+
+# Anti-patterns to AVOID on story-heavy pages
+
+1. NEVER pull ingredients from a "shop my kitchen" or affiliate block. Those
+   are products the author sells, not ingredients in this recipe.
+2. NEVER pull steps from FAQ answers ("Can I use a slow cooker? Yes…"). Those
+   describe a variant, not the recipe being shown.
+3. NEVER pull an ingredient or step from a "related recipes" / "you may also
+   like" list. Those are different recipes entirely.
+4. If the body of the post mentions a quantity casually ("we used to add a
+   half-cup more wine"), do NOT update the ingredient list — use the formal
+   ingredients block, not the prose.
+5. If the page title contains a different dish than the recipe block (e.g.
+   page title "10 Comfort Foods" but the recipe block is "Pot Roast"), use
+   the recipe block's title.
+
 Return ONLY the JSON object, conforming to the schema. No prose.`;
 
-const MODEL = process.env.RECIPE_LLM_MODEL || "claude-opus-4-7";
+// Hardcoded — Opus is intentionally NOT a supported option (see file header).
+const MODEL = "claude-haiku-4-5-20251001";
 
 export async function extractRecipeWithLlm(
   url: string,
@@ -165,7 +260,10 @@ export async function extractRecipeWithLlm(
       {
         type: "text",
         text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
+        // 1h TTL: 2x cache-write cost vs default 5min, but 0.1x cache-read
+        // cost. Wins for any usage pattern where reads outnumber writes —
+        // recipe searches within an hour share the same long system prompt.
+        cache_control: { type: "ephemeral", ttl: "1h" },
       },
     ],
     output_config: {

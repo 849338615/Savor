@@ -41,21 +41,71 @@ export async function fetchHtml(url: string, timeoutMs = 8_000): Promise<string>
 }
 
 /**
- * Get just the page text (no tags, no scripts, no styles). Used as the LLM
- * fallback input — much smaller than full HTML, and the model only needs the
- * words. Truncated to ~50KB.
+ * Get the recipe-relevant text out of a recipe webpage. Used as the LLM
+ * fallback input.
+ *
+ * Three-tier strategy:
+ *   1. If the page exposes a recognized recipe-card subtree
+ *      (schema.org `itemtype=".../Recipe"`, or one of the common WP recipe-card
+ *      class names), return only that subtree. This is the common case on
+ *      story-heavy blogs and reduces input from ~12K to ~1.5K tokens.
+ *   2. Otherwise strip well-known chrome (nav/aside/footer/sidebar/comments/
+ *      promo blocks/etc.) from the full page, then prefer `<main>`/`<article>`.
+ *   3. Fall back to whole-page strip.
+ *
+ * Truncated to ~50KB.
  */
 import { cleanText } from "@/lib/text/decode";
+import { upgradeImageUrl } from "./image";
+
+const NOISE_TAG_RE =
+  /<(nav|aside|footer|header|form|noscript|script|style|svg|iframe|video|audio|picture|figure)\b[^>]*>[\s\S]*?<\/\1>/gi;
+
+const NOISE_CLASS_TOKENS = [
+  "site-header", "site-footer", "global-nav", "site-nav", "main-nav",
+  "menu", "drawer", "sidebar", "subscribe", "newsletter", "signup",
+  "comment", "comments", "disqus", "related", "you-may-also",
+  "share", "social", "promo", "ad-", "ads-", "advert",
+  "sponsor", "affiliate", "popup", "modal", "cookie",
+  "breadcrumb", "author-bio", "back-to-top", "skip-to",
+  "jump-to-recipe-button", "print-button",
+];
+
+const NOISE_CLASS_RE = new RegExp(
+  String.raw`<(\w+)[^>]*\b(?:class|id)\s*=\s*["'][^"']*\b(` +
+    NOISE_CLASS_TOKENS.join("|") +
+    String.raw`)\b[^"']*["'][^>]*>[\s\S]*?<\/\1>`,
+  "gi",
+);
+
+const RECIPE_BLOCK_RES = [
+  /<(article|section|div)[^>]*itemtype\s*=\s*["'][^"']*\/Recipe["'][^>]*>[\s\S]*?<\/\1>/i,
+  /<(article|section|div)[^>]*\bclass\s*=\s*["'][^"']*\b(?:wprm-recipe-container|tasty-recipes|mv-recipe|recipe-card|recipe-callout|recipe-content)\b[^"']*["'][^>]*>[\s\S]*?<\/\1>/i,
+];
+
+function stripChrome(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(NOISE_TAG_RE, " ")
+    .replace(NOISE_CLASS_RE, " ");
+}
 
 export function extractReadableText(html: string, maxChars = 50_000): string {
-  const stripped = cleanText(
-    html
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
-      .replace(/<!--[\s\S]*?-->/g, " "),
-  );
+  // 1. Prefer a recognized recipe-card subtree if present and substantial.
+  for (const re of RECIPE_BLOCK_RES) {
+    const m = html.match(re);
+    if (m && m[0].length > 600) {
+      const text = cleanText(stripChrome(m[0]));
+      return text.length > maxChars ? text.slice(0, maxChars) + "…" : text;
+    }
+  }
 
+  // 2. Strip chrome from the full page, then prefer <main>/<article>.
+  const cleaned = stripChrome(html);
+  const article = cleaned.match(/<(main|article)\b[^>]*>([\s\S]*?)<\/\1>/i);
+  const body = article?.[2] ?? cleaned;
+
+  const stripped = cleanText(body);
   return stripped.length > maxChars
     ? stripped.slice(0, maxChars) + "…"
     : stripped;
@@ -85,8 +135,43 @@ export function extractCanonicalUrl(
 }
 
 export function extractOgImage(html: string): string | undefined {
-  const og = html.match(
+  const candidates: Array<{ url: string; alt?: string }> = [];
+
+  const ogUrl = html.match(
     /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
+  )?.[1];
+  const ogAlt = html.match(
+    /<meta[^>]+property=["']og:image:alt["'][^>]+content=["']([^"']+)["']/i,
+  )?.[1];
+  if (ogUrl) candidates.push({ url: ogUrl, alt: ogAlt });
+
+  const twUrl = html.match(
+    /<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i,
+  )?.[1];
+  const twAlt = html.match(
+    /<meta[^>]+name=["']twitter:image:alt["'][^>]+content=["']([^"']+)["']/i,
+  )?.[1];
+  if (twUrl) candidates.push({ url: twUrl, alt: twAlt });
+
+  for (const { url, alt } of candidates) {
+    if (isGenericBrandImage(url, alt)) continue;
+    return upgradeImageUrl(url);
+  }
+
+  return undefined;
+}
+
+/**
+ * Recognize site-wide brand/social-share assets so we don't hand them off as
+ * recipe thumbnails. A broken 404 shell on a JS-rendered site (Modern
+ * Proper, several Substack-style cooking blogs) commonly serves a generic
+ * `og:image` like `…/global/site-seo-image.jpg` with alt
+ * "The Modern Proper Brand Logotype" — surfacing that as the recipe photo
+ * is worse than showing the gradient backstop.
+ */
+function isGenericBrandImage(url: string, alt?: string): boolean {
+  if (alt && /\b(logo|logotype|brand|wordmark)\b/i.test(alt)) return true;
+  return /\/(?:global\/|brand\/|social[-_]?share|seo[-_]?image|og[-_]?image|default[-_]?share|fallback)/i.test(
+    url,
   );
-  return og?.[1];
 }

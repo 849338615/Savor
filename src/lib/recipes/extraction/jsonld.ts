@@ -18,6 +18,7 @@
  */
 
 import { cleanText } from "@/lib/text/decode";
+import { upgradeImageUrl } from "./image";
 import type { ExtractedIngredient, ExtractedInstruction } from "./types";
 import { isIngredientSectionHeader, parseIngredientLine } from "./parseIngredient";
 
@@ -217,19 +218,103 @@ function pickKeywords(v: unknown): string[] {
   return pickStringArray(v).map((s) => s.toLowerCase());
 }
 
+/**
+ * Pick the highest-resolution image from a Schema.org `image` field.
+ *
+ * The field is published in many shapes:
+ *   - "https://…/photo.jpg"
+ *   - ["https://…/sq.jpg", "https://…/4x3.jpg", "https://…/16x9.jpg"]
+ *   - { "@type": "ImageObject", "url": "…", "width": 1200, "height": 900 }
+ *   - [{ url, width, height }, …]
+ *
+ * Quality recipe sites (NYT, Bon Appétit, BBC Good Food, most WP Recipe
+ * Maker / Tasty Recipes blogs) publish multiple aspect-ratio crops. The first
+ * entry is often the 1:1 thumbnail — picking it leaves a soft, low-res hero
+ * on the detail page even though a high-res 4:3 / 16:9 crop is right there.
+ *
+ * Strategy: collect every candidate URL with whatever width/height the site
+ * provided, run each through `upgradeImageUrl` (strips WP `-768x1024` size
+ * suffixes and `?w=300` downsizers), then prefer the largest by pixel area,
+ * with a tie-break that favors landscape over square so the hero crop fills
+ * the 5:4 hero on the detail page without distortion.
+ */
 function pickImage(v: unknown): string | undefined {
-  if (typeof v === "string") return v;
-  if (Array.isArray(v) && v.length) {
-    const first = v[0];
-    if (typeof first === "string") return first;
-    if (first && typeof first === "object" && "url" in first) {
-      const url = (first as Record<string, unknown>).url;
-      return typeof url === "string" ? url : undefined;
-    }
+  const candidates = collectImageCandidates(v);
+  if (candidates.length === 0) return undefined;
+
+  candidates.sort((a, b) => {
+    const areaA = (a.width ?? 0) * (a.height ?? 0);
+    const areaB = (b.width ?? 0) * (b.height ?? 0);
+    if (areaA !== areaB) return areaB - areaA;
+    // Same/unknown area: prefer landscape over square (better for 5:4 hero).
+    const ratioA = a.width && a.height ? a.width / a.height : 1;
+    const ratioB = b.width && b.height ? b.width / b.height : 1;
+    return Math.abs(1 - ratioA) > Math.abs(1 - ratioB) ? -1 : 1;
+  });
+
+  return upgradeImageUrl(candidates[0].url);
+}
+
+interface ImageCandidate {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+function collectImageCandidates(v: unknown): ImageCandidate[] {
+  if (!v) return [];
+  if (typeof v === "string") {
+    return v.trim() ? [withUrlDims({ url: v.trim() })] : [];
   }
-  if (v && typeof v === "object" && "url" in v) {
-    const url = (v as Record<string, unknown>).url;
-    return typeof url === "string" ? url : undefined;
+  if (Array.isArray(v)) {
+    return v.flatMap(collectImageCandidates);
+  }
+  if (typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    const url =
+      typeof obj.url === "string"
+        ? obj.url
+        : typeof obj.contentUrl === "string"
+          ? obj.contentUrl
+          : undefined;
+    if (!url) return [];
+    return [
+      withUrlDims({
+        url,
+        width: pickDimension(obj.width),
+        height: pickDimension(obj.height),
+      }),
+    ];
+  }
+  return [];
+}
+
+/**
+ * Backfill missing width/height from the URL query string. Imgix and most
+ * other transformation CDNs embed the requested dimensions as `w=`/`h=`
+ * parameters; when the publisher serves a JSON-LD `image` array of bare
+ * strings (Modern Proper, e.g.), this is the only signal we have to rank
+ * variants by pixel area instead of falling back to a landscape tie-break
+ * that might pick the lowest-resolution crop.
+ */
+function withUrlDims(c: ImageCandidate): ImageCandidate {
+  if (c.width && c.height) return c;
+  try {
+    const u = new URL(c.url);
+    const w = c.width ?? pickDimension(u.searchParams.get("w"));
+    const h = c.height ?? pickDimension(u.searchParams.get("h"));
+    if (w || h) return { ...c, width: w, height: h };
+  } catch {
+    /* not a parseable URL — leave as is */
+  }
+  return c;
+}
+
+function pickDimension(v: unknown): number | undefined {
+  if (typeof v === "number" && v > 0) return v;
+  if (typeof v === "string") {
+    const n = parseInt(v, 10);
+    if (!Number.isNaN(n) && n > 0) return n;
   }
   return undefined;
 }

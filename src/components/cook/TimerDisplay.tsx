@@ -94,14 +94,26 @@ export function TimerDisplay({
       <div
         className={
           isLarge
-            ? "flex w-full items-center justify-center gap-3 rounded-[var(--radius-2xl)] border border-[var(--border-hairline)] bg-surface px-6 py-5"
+            ? "relative flex w-full items-center justify-center rounded-[var(--radius-2xl)] border border-[var(--border-hairline)] bg-surface px-7 py-5"
             : "inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-hairline)] bg-surface px-[18px] py-2.5 text-[15px] font-semibold tabular-nums text-ink"
         }
       >
         <TimerIcon
-          size={isLarge ? 22 : 14}
+          size={isLarge ? 26 : 14}
           strokeWidth={1.75}
-          className={finished ? "text-stone" : "text-forest"}
+          // In large mode the icon is absolutely positioned so the digits can
+          // truly center inside the pill. With the icon in the flex flow it
+          // would push the digits right-of-center, since nothing on the right
+          // balances its width.
+          className={
+            isLarge
+              ? `pointer-events-none absolute left-7 top-1/2 -translate-y-1/2 ${
+                  finished ? "text-stone" : "text-forest"
+                }`
+              : finished
+                ? "text-stone"
+                : "text-forest"
+          }
           aria-hidden
         />
         <span

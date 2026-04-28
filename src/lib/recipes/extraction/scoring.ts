@@ -129,7 +129,13 @@ export function scoreCandidate(c: ExtractedCandidate): ScoredCandidate | null {
   const rankScore = scoreRank(c.searchRank);
   const domainScore = scoreDomain(c.url);
 
-  const score = ratingScore + rankScore + domainScore + completenessScore;
+  // Unverified LLM extractions get a soft penalty so a verified competitor
+  // with the same base score wins. They still appear in results when nothing
+  // better is available.
+  const unverifiedPenalty = c.via === "llm-unverified" ? -3 : 0;
+
+  const score =
+    ratingScore + rankScore + domainScore + completenessScore + unverifiedPenalty;
   return {
     candidate: c,
     score,

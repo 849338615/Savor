@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useSaved } from "@/hooks/useSaved";
 import { useCookingSession } from "@/hooks/useCookingSession";
+import {
+  AmbientLayer,
+  Bloom,
+} from "@/components/layout/AmbientBackground";
 
 interface Row {
   label: string;
@@ -31,8 +35,21 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="flex flex-col">
-      <header className="px-5 pb-2 pt-[max(env(safe-area-inset-top,1rem),3.5rem)] text-center">
+    <div className="relative flex flex-1 flex-col">
+      {/* Avatar spotlight — a soft top-center warm bloom that focuses
+          attention around the user's avatar without competing with the
+          settings rows below. Composes with the AppShell base bloom for
+          a layered, personal warmth. */}
+      <AmbientLayer>
+        <Bloom
+          position="left-1/2 -top-[20%] -translate-x-1/2"
+          size="w-[95%]"
+          tone="sand"
+          opacity={38}
+          fadeAt={58}
+        />
+      </AmbientLayer>
+      <header className="relative px-5 pb-2 pt-[max(env(safe-area-inset-top,1rem),3.5rem)] text-center">
         <div
           className="mx-auto grid h-[72px] w-[72px] place-items-center rounded-full bg-sage-mist font-display text-[26px] font-semibold text-forest"
           aria-hidden
@@ -48,7 +65,7 @@ export default function ProfilePage() {
       </header>
 
       {mounted && hasHydrated && recipeSlug && recipeTitle ? (
-        <section className="mx-5 mt-5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-cream px-4 py-4">
+        <section className="relative mx-5 mt-5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-cream px-4 py-4">
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
             <span aria-hidden className="h-px w-5 bg-forest/45" />
             In progress
@@ -77,7 +94,7 @@ export default function ProfilePage() {
         </section>
       ) : null}
 
-      <ul className="mt-5">
+      <ul className="relative mt-5">
         {rows.map((r, i) => {
           const isFirst = i === 0;
           const isLast = i === rows.length - 1;
