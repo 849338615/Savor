@@ -22,12 +22,42 @@
   --savor-sand: #e7d9c2;
   --savor-olive: #92a37d;
 
+  /* Edible warm hues — semantic, not decorative.
+     OKLCH-tuned, low chroma; carry meaning across the app. */
+  --savor-honey: oklch(76% 0.13 75);          /* warmth, simmer, in-progress */
+  --savor-honey-mist: oklch(95% 0.04 80);     /* pale honey wash */
+  --savor-honey-deep: oklch(48% 0.09 65);     /* burnt amber for ink-on-honey */
+  --savor-clay: oklch(60% 0.10 35);           /* terracotta, depth, comfort */
+  --savor-clay-mist: oklch(94% 0.025 35);     /* pale clay wash */
+  --savor-clay-deep: oklch(42% 0.08 30);      /* ember */
+  --savor-blush: oklch(65% 0.10 18);          /* rose-clay, the saved/loved tone */
+  --savor-blush-mist: oklch(94% 0.025 15);    /* pale blush wash */
+  --savor-blush-deep: oklch(48% 0.09 15);     /* deep rose */
+
   /* Semantic foreground */
   --fg-1: var(--savor-ink);
   --fg-2: var(--savor-stone);
   --fg-3: #9a9690;
   --fg-brand: var(--savor-forest);
   --fg-on-brand: var(--savor-soft-white);
+
+  /* Difficulty — sage (light) → honey (medium) → clay (deeper). */
+  --fg-easy: var(--savor-sage);
+  --fg-medium: var(--savor-honey);
+  --fg-hard: var(--savor-clay);
+
+  /* Step section type — small dot guides recipe rhythm. */
+  --fg-section-prep: var(--savor-sage);
+  --fg-section-cook: var(--savor-honey);
+  --fg-section-rest: var(--savor-mist);
+  --fg-section-serve: var(--savor-forest);
+
+  /* Saved/loved — emotional state, deserves its own warm tone. */
+  --fg-saved: var(--savor-blush);
+  --bg-saved-tint: var(--savor-blush-mist);
+
+  /* Subtle optional-marker tint — calmer than ink, warmer than stone. */
+  --fg-optional: oklch(58% 0.04 40);
 
   /* Semantic background */
   --bg-app: var(--savor-soft-white);
@@ -104,6 +134,16 @@
   --color-olive: var(--savor-olive);
 
   --color-charcoal: var(--savor-ink);
+
+  --color-honey: var(--savor-honey);
+  --color-honey-mist: var(--savor-honey-mist);
+  --color-honey-deep: var(--savor-honey-deep);
+  --color-clay: var(--savor-clay);
+  --color-clay-mist: var(--savor-clay-mist);
+  --color-clay-deep: var(--savor-clay-deep);
+  --color-blush: var(--savor-blush);
+  --color-blush-mist: var(--savor-blush-mist);
+  --color-blush-deep: var(--savor-blush-deep);
 
   --font-display: var(--font-playfair);
   --font-sans: var(--font-inter);

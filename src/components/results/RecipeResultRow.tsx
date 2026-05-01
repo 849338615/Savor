@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock, Star } from "lucide-react";
 import type { RecipeSummary } from "@/lib/recipes/types";
-import { cn, formatMinutes } from "@/lib/utils";
+import { cn, difficultyTone, formatMinutes } from "@/lib/utils";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "./RecipePhoto";
 
@@ -80,7 +80,16 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
             </span>
           ) : null}
           {hasTime && recipe.difficulty ? <Dot /> : null}
-          <span>{recipe.difficulty}</span>
+          {recipe.difficulty ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className="h-[6px] w-[6px] rounded-full"
+                style={{ background: difficultyTone(recipe.difficulty) }}
+              />
+              {recipe.difficulty}
+            </span>
+          ) : null}
         </div>
       </div>
     </Link>

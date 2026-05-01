@@ -47,7 +47,10 @@ export function IngredientItem({
         <span className="block first-letter:uppercase">
           {ingredient.name}
           {ingredient.optional && (
-            <span className="ml-2 text-[11px] uppercase tracking-wider text-stone">
+            <span
+              className="ml-2 text-[11px] uppercase tracking-wider"
+              style={{ color: "var(--fg-optional)" }}
+            >
               optional
             </span>
           )}

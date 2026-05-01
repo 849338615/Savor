@@ -13,6 +13,18 @@ interface LastResultsState {
   setHasHydrated: (v: boolean) => void;
 }
 
+/**
+ * "Last results" backs the Home tab's redirect-to-current-search behavior.
+ * Scoped to the *session* (not localStorage) on purpose:
+ *  - Cross-session leakage feels wrong here. Re-launching the app should
+ *    greet the user with the welcome hero, not yesterday's search.
+ *  - Within a session, the user expects Home to return them to whatever
+ *    they were last browsing — sessionStorage covers reloads and
+ *    bfcache-restores while still resetting on a real new session.
+ *
+ * The store is also cleared explicitly when the user lands on `/`
+ * (welcome) — the natural "leave the results section" gesture.
+ */
 export const useLastResults = create<LastResultsState>()(
   persist(
     (set) => ({
@@ -26,7 +38,7 @@ export const useLastResults = create<LastResultsState>()(
     }),
     {
       name: "savor-last-results",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({ q: s.q, tag: s.tag }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

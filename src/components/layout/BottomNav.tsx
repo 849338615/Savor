@@ -57,15 +57,21 @@ export function BottomNav() {
   const lastQ = useLastResults((s) => s.q);
   const lastTag = useLastResults((s) => s.tag);
   const lastHydrated = useLastResults((s) => s.hasHydrated);
+  const clearLastResults = useLastResults((s) => s.clear);
   const setSection = useNav((s) => s.setSection);
 
   // Keep the active section in sync with the URL. Direct nav, deep links,
   // and back/forward all flow through here. /recipe/* paths intentionally
   // return null so the user keeps the section they entered from.
+  //
+  // Landing on `/` is also the explicit "leave results" gesture: clear
+  // any stored query so the Home tab won't bounce the user back to a
+  // results page they intentionally left.
   useEffect(() => {
     const next = sectionForPath(pathname);
     if (next) setSection(next);
-  }, [pathname, setSection]);
+    if (pathname === "/") clearLastResults();
+  }, [pathname, setSection, clearLastResults]);
 
   if (pathname.endsWith("/cook")) return null;
 

@@ -72,12 +72,19 @@ export function BookmarkToggle({
       >
         <span
           aria-hidden
-          style={{ width: visual, height: visual }}
+          style={{
+            width: visual,
+            height: visual,
+            // Saving is the warm, emotional moment in an otherwise calm app.
+            // Outline state stays forest (it's an action — match the brand
+            // anchor); filled state shifts to blush, the saved/loved tone.
+            color: isSaved ? "var(--fg-saved)" : "var(--savor-forest)",
+          }}
           className={cn(
-            "relative grid place-items-center rounded-full transition-colors",
+            "relative grid place-items-center rounded-full transition-colors duration-200",
             onScrim
-              ? "bg-soft-white/85 text-forest backdrop-blur hover:bg-soft-white"
-              : "text-forest hover:bg-cream",
+              ? "bg-soft-white/85 backdrop-blur hover:bg-soft-white"
+              : "hover:bg-cream",
           )}
         >
           <Bookmark

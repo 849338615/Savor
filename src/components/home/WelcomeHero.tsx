@@ -6,11 +6,14 @@ import { motion } from "motion/react";
 interface Message {
   eyebrow: string;
   headline: string; // \n marks the editorial line break
+  tone: string;
 }
 
 interface Period {
   hours: ReadonlyArray<number>;
   eyebrow: string;
+  /** CSS color used to tint the eyebrow rule + label by time of day. */
+  tone: string;
   messages: ReadonlyArray<string>;
 }
 
@@ -21,10 +24,14 @@ interface Period {
  * "Let's" is reserved for guiding moments inside cook mode and is
  * deliberately not used here.
  */
+// Each period carries a tone: a calm hue cue that shifts the eyebrow rule
+// across the day. Sunrise honey → midday forest → afternoon sage → evening
+// forest-deep → wind-down clay → night ink. Subtle; always low chroma.
 const PERIODS: ReadonlyArray<Period> = [
   {
     hours: [5, 6, 7, 8, 9],
     eyebrow: "Good morning",
+    tone: "var(--savor-honey-deep)",
     messages: [
       "What’s for\nbreakfast?",
       "A slow\nmorning.",
@@ -35,16 +42,19 @@ const PERIODS: ReadonlyArray<Period> = [
   {
     hours: [10, 11],
     eyebrow: "Late morning",
+    tone: "var(--savor-honey-deep)",
     messages: ["Brunch\ntoday?", "What’s\ncooking?", "A late\nstart?"],
   },
   {
     hours: [12, 13],
     eyebrow: "Midday",
+    tone: "var(--savor-forest)",
     messages: ["Lunch\ntoday?", "What’s\nfor lunch?", "A simple\nplate?"],
   },
   {
     hours: [14, 15, 16],
     eyebrow: "Afternoon",
+    tone: "var(--savor-olive)",
     messages: [
       "What’s\ncooking?",
       "Prep for\ntonight?",
@@ -55,6 +65,7 @@ const PERIODS: ReadonlyArray<Period> = [
   {
     hours: [17, 18, 19, 20],
     eyebrow: "Tonight",
+    tone: "var(--savor-forest)",
     messages: [
       "What’s for\ndinner?",
       "Tonight’s\nplate?",
@@ -65,12 +76,14 @@ const PERIODS: ReadonlyArray<Period> = [
   {
     hours: [21, 22, 23],
     eyebrow: "Wind down",
+    tone: "var(--savor-clay-deep)",
     messages: ["A late\nsupper?", "Something\nsimple?", "A small\nplate?"],
   },
   {
     // 12am – 4am
     hours: [0, 1, 2, 3, 4],
     eyebrow: "Still up",
+    tone: "var(--savor-stone)",
     messages: [
       "A late night\nnibble?",
       "Quiet\nkitchen.",
@@ -86,6 +99,7 @@ const PERIODS: ReadonlyArray<Period> = [
 const SSR_DEFAULT: Message = {
   eyebrow: "Tonight",
   headline: "What’s for\ndinner?",
+  tone: "var(--savor-forest)",
 };
 
 function pickMessage(): Message {
@@ -94,7 +108,7 @@ function pickMessage(): Message {
   if (!period) return SSR_DEFAULT;
   const headline =
     period.messages[Math.floor(Math.random() * period.messages.length)];
-  return { eyebrow: period.eyebrow, headline };
+  return { eyebrow: period.eyebrow, headline, tone: period.tone };
 }
 
 /**
@@ -140,8 +154,17 @@ export function WelcomeHero() {
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col gap-5"
     >
-      <p className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
-        <span aria-hidden className="block h-px w-8 bg-forest/45" />
+      <p
+        className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: msg.tone }}
+      >
+        <span
+          aria-hidden
+          className="block h-px w-8"
+          style={{
+            background: `color-mix(in oklch, ${msg.tone} 55%, transparent)`,
+          }}
+        />
         {msg.eyebrow}
       </p>
       <h1 className="font-display text-[44px] font-semibold leading-[1.05] tracking-[-0.015em] text-ink whitespace-pre-line text-balance">

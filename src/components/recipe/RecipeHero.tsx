@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, Users } from "lucide-react";
 import type { Recipe } from "@/lib/recipes/types";
-import { formatMinutes, pluralize } from "@/lib/utils";
+import { difficultyTone, formatMinutes, pluralize } from "@/lib/utils";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "@/components/results/RecipePhoto";
 import { useSectionBackHref } from "@/hooks/useNav";
@@ -69,7 +69,14 @@ export function RecipeHero({ recipe }: RecipeHeroProps) {
             {pluralize(recipe.servings, "serving")}
           </span>
           <span aria-hidden className="h-3 w-px bg-soft-white/40" />
-          <span>{recipe.difficulty}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-[7px] w-[7px] rounded-full ring-1 ring-soft-white/30"
+              style={{ background: difficultyTone(recipe.difficulty) }}
+            />
+            {recipe.difficulty}
+          </span>
         </div>
       </div>
     </div>

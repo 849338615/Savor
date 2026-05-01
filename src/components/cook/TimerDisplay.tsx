@@ -94,8 +94,23 @@ export function TimerDisplay({
       <div
         className={
           isLarge
-            ? "relative flex w-full items-center justify-center rounded-[var(--radius-2xl)] border border-[var(--border-hairline)] bg-surface px-7 py-5"
+            ? "relative flex w-full items-center justify-center rounded-[var(--radius-2xl)] border px-7 py-5 transition-colors duration-300 ease-out"
             : "inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-hairline)] bg-surface px-[18px] py-2.5 text-[15px] font-semibold tabular-nums text-ink"
+        }
+        style={
+          isLarge
+            ? {
+                // While the timer ticks, the pill warms: a thin honey wash
+                // background and a honey hairline. On finish, both fade back
+                // to the neutral surface.
+                background: running
+                  ? "color-mix(in oklch, var(--savor-honey-mist) 70%, var(--bg-surface))"
+                  : "var(--bg-surface)",
+                borderColor: running
+                  ? "color-mix(in oklch, var(--savor-honey) 38%, var(--border-hairline))"
+                  : "var(--border-hairline)",
+              }
+            : undefined
         }
       >
         <TimerIcon
@@ -107,22 +122,34 @@ export function TimerDisplay({
           // balances its width.
           className={
             isLarge
-              ? `pointer-events-none absolute left-7 top-1/2 -translate-y-1/2 ${
-                  finished ? "text-stone" : "text-forest"
-                }`
-              : finished
-                ? "text-stone"
-                : "text-forest"
+              ? "pointer-events-none absolute left-7 top-1/2 -translate-y-1/2 transition-colors duration-300"
+              : "transition-colors duration-300"
           }
+          style={{
+            color: finished
+              ? "var(--savor-stone)"
+              : running
+                ? "var(--savor-honey-deep)"
+                : "var(--savor-forest)",
+          }}
           aria-hidden
         />
         <span
           className={
             isLarge
-              ? `font-display tabular-nums leading-none ${
-                  finished ? "text-stone" : "text-ink"
-                } text-[44px] font-semibold tracking-[-0.01em]`
+              ? "font-display tabular-nums leading-none text-[44px] font-semibold tracking-[-0.01em] transition-colors duration-300"
               : "tabular-nums"
+          }
+          style={
+            isLarge
+              ? {
+                  color: finished
+                    ? "var(--savor-stone)"
+                    : running
+                      ? "var(--savor-honey-deep)"
+                      : "var(--savor-ink)",
+                }
+              : undefined
           }
           aria-live="polite"
           aria-atomic="true"

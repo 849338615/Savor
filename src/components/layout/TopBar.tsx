@@ -14,10 +14,12 @@ interface TopBarProps {
   back?: string | (() => void);
   rightSlot?: React.ReactNode;
   className?: string;
-  /** Apply an iOS-like nav-bar inset. Top padding floors at 1.5rem (24px)
-   *  so the bar reads as a proper nav bar even when no real safe-area
-   *  inset is reported (desktop simulator, in-page card frames). On
-   *  devices with a larger safe-area, the safe-area wins. */
+  /** Apply an iOS-like nav-bar inset. Top padding floors at 1rem (16px)
+   *  so the bar reads as a tight, proper nav bar even when no real
+   *  safe-area inset is reported (desktop simulator, in-page card
+   *  frames). On devices with a larger safe-area, the safe-area wins
+   *  and the bar correctly clears the dynamic island. The page's first
+   *  content block carries its own breathing room — the bar stays lean. */
   iosInset?: boolean;
 }
 
@@ -59,7 +61,7 @@ export function TopBar({
       // with nested env()/max() calls; inline guarantees the rule lands.
       style={
         iosInset
-          ? { paddingTop: "max(env(safe-area-inset-top, 1rem), 1.5rem)" }
+          ? { paddingTop: "max(env(safe-area-inset-top, 1rem), 1rem)" }
           : undefined
       }
     >

@@ -1,4 +1,5 @@
 import type { Step } from "@/lib/recipes/types";
+import { sectionTone } from "@/lib/utils";
 import { TimerChip } from "./TimerChip";
 
 interface StepListProps {
@@ -16,7 +17,12 @@ export function StepList({ steps }: StepListProps) {
           key={`section-${step.id}`}
           className="mt-3 first:mt-0 px-1 pt-1.5 pb-0.5 list-none"
         >
-          <h3 className="font-display text-[12px] font-semibold uppercase tracking-[0.14em] text-stone">
+          <h3 className="flex items-center gap-2 font-display text-[12px] font-semibold uppercase tracking-[0.14em] text-stone">
+            <span
+              aria-hidden
+              className="h-[7px] w-[7px] shrink-0 rounded-full"
+              style={{ background: sectionTone(step.section) }}
+            />
             {step.section}
           </h3>
         </li>,
