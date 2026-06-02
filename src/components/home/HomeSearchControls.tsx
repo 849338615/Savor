@@ -16,9 +16,6 @@ export function HomeSearchControls() {
 
   return (
     <>
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
-        Try a mood
-      </p>
       <FilterBar selected={tags} onChange={setTags} />
       <div className="pt-6">
         <SearchBar size="lg" carryTags={tags} />
