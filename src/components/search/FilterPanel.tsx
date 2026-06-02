@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { FILTER_GROUPS } from "@/lib/filters";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ export function FilterPanel({
   const [draft, setDraft] = useState<string[]>(initial);
   const [wasOpen, setWasOpen] = useState(open);
   const titleId = useId();
+  const dragControls = useDragControls();
 
   // Mount into the AppShell phone-card so the sheet stays inside the app
   // frame (scrim + sheet bounded by the card) rather than bleeding across
@@ -97,13 +98,29 @@ export function FilterPanel({
             exit={{ y: 64, opacity: 0 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
+            // Swipe-to-dismiss from the grabber. The drag is started manually
+            // by the handle (dragListener=false) so it never fights the
+            // scrollable body. Downward give only; release past ~96px or with
+            // a downward flick dismisses, otherwise it springs back to rest.
+            drag="y"
+            dragListener={false}
+            dragControls={dragControls}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.55 }}
+            dragMomentum={false}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 96 || info.velocity.y > 600) onClose();
+            }}
           >
-            {/* Grabber — a small cue that this surface came from the bottom
-                edge. Decorative; not a drag affordance. */}
-            <span
+            {/* Grabber — also the drag handle. `touch-action: none` lets the
+                pointer drive the sheet instead of scrolling the page. */}
+            <div
+              onPointerDown={(e) => dragControls.start(e)}
+              className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-3 active:cursor-grabbing"
               aria-hidden
-              className="mx-auto mt-3 block h-1 w-9 shrink-0 rounded-full bg-[var(--border-strong)]/60"
-            />
+            >
+              <span className="block h-1 w-9 rounded-full bg-[var(--border-strong)]/60" />
+            </div>
 
             <div className="flex items-center justify-between px-6 pb-1 pt-4">
               <h2
