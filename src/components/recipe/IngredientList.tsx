@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import type { Ingredient } from "@/lib/recipes/types";
 import { scaleAmount } from "@/lib/recipes/scale";
+import { convertAmount } from "@/lib/units/convert";
 import { useCookingSession } from "@/hooks/useCookingSession";
+import { useUnits } from "@/hooks/useUnits";
 import { IngredientItem } from "./IngredientItem";
 import { ServingsStepper } from "./ServingsStepper";
 
@@ -25,6 +27,12 @@ export function IngredientList({
   const checkedMap = useCookingSession((s) => s.checkedIngredients);
   const toggleIngredient = useCookingSession((s) => s.toggleIngredient);
 
+  // Use the in-memory default until the persisted preference rehydrates, so
+  // the first client render matches the server-rendered amounts.
+  const storedSystem = useUnits((s) => s.system);
+  const unitsHydrated = useUnits((s) => s.hasHydrated);
+  const system = unitsHydrated ? storedSystem : "metric";
+
   const servings = overrideServings ?? baseServings;
   const ratio = servings / baseServings;
 
@@ -32,9 +40,11 @@ export function IngredientList({
     () =>
       ingredients.map((i) => ({
         ...i,
-        scaledAmount: scaleAmount(i.amount, ratio),
+        // Scale to the chosen servings first, then express in the chosen
+        // measurement system.
+        scaledAmount: convertAmount(scaleAmount(i.amount, ratio), system),
       })),
-    [ingredients, ratio],
+    [ingredients, ratio, system],
   );
 
   return (

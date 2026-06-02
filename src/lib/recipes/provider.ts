@@ -1,7 +1,8 @@
 import type { Recipe, RecipeSummary } from "./types";
 
 export interface SearchOptions {
-  tag?: string;
+  /** Selected filter tags. AND together; folded into the query string. */
+  tags?: string[];
   limit?: number;
 }
 

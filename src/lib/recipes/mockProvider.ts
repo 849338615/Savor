@@ -45,10 +45,14 @@ function score(recipe: Recipe, query: string): number {
 export const mockProvider: RecipeProvider = {
   async search(query, options: SearchOptions = {}) {
     const limit = options.limit ?? 8;
-    const tag = options.tag?.toLowerCase();
+    const tags = (options.tags ?? []).map((t) => t.toLowerCase());
 
-    const candidates = tag
-      ? RECIPES.filter((r) => r.tags.map((t) => t.toLowerCase()).includes(tag))
+    // Every selected tag must be present (AND). No tags → all recipes.
+    const candidates = tags.length
+      ? RECIPES.filter((r) => {
+          const recipeTags = r.tags.map((t) => t.toLowerCase());
+          return tags.every((t) => recipeTags.includes(t));
+        })
       : RECIPES;
 
     if (!query.trim()) {

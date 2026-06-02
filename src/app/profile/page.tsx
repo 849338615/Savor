@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useSaved } from "@/hooks/useSaved";
 import { useCookingSession } from "@/hooks/useCookingSession";
+import { useUnits } from "@/hooks/useUnits";
+import { unitSystemLabel } from "@/lib/units/convert";
 import {
   AmbientLayer,
   Bloom,
@@ -25,13 +26,17 @@ export default function ProfilePage() {
   const hasHydrated = useCookingSession((s) => s.hasHydrated);
   const resetSession = useCookingSession((s) => s.reset);
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const unitSystem = useUnits((s) => s.system);
+  const unitsHydrated = useUnits((s) => s.hasHydrated);
 
   const rows: Row[] = [
     { label: "Saved recipes", meta: String(savedCount), href: "/saved" },
     { label: "Dietary preferences", meta: "Not set" },
-    { label: "Units", meta: "Metric" },
+    {
+      label: "Units",
+      meta: unitsHydrated ? unitSystemLabel(unitSystem) : "Metric",
+      href: "/profile/units",
+    },
   ];
 
   return (
@@ -64,7 +69,7 @@ export default function ProfilePage() {
         </p>
       </header>
 
-      {mounted && hasHydrated && recipeSlug && recipeTitle ? (
+      {hasHydrated && recipeSlug && recipeTitle ? (
         <section className="relative mx-5 mt-5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-cream px-4 py-4">
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
             <span aria-hidden className="h-px w-5 bg-forest/45" />

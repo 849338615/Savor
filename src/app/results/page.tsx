@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { SearchBar } from "@/components/search/SearchBar";
-import { FilterChips } from "@/components/search/FilterChips";
+import { ResultsFilterBar } from "@/components/search/ResultsFilterBar";
 import { RecipeResultRow } from "@/components/results/RecipeResultRow";
 import { RecordLastResults } from "@/components/results/RecordLastResults";
 import { RecipeResultRowSkeleton } from "@/components/feedback/RecipeResultRowSkeleton";
 import { PulseDot } from "@/components/feedback/PulseDot";
 import { getProvider } from "@/lib/recipes/getProvider";
+import { labelForTag, parseTags, serializeTags } from "@/lib/filters";
 import { pluralize } from "@/lib/utils";
 
 interface ResultsPageProps {
@@ -25,7 +26,8 @@ interface ResultsPageProps {
  */
 export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const { q = "", tag } = await searchParams;
-  const headline = buildHeadline(q, tag);
+  const tags = parseTags(tag);
+  const headline = buildHeadline(q, tags);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -38,12 +40,12 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
           zone). The 24/16/24 pattern reads as a distinct "header
           section" between the nav and the results body. */}
       <div className="px-6 pt-3">
-        <SearchBar defaultValue={q} />
+        <SearchBar defaultValue={q} carryTags={tags} />
       </div>
 
       <Suspense fallback={<div className="h-10" />}>
         <div className="mt-4 px-6">
-          <FilterChips />
+          <ResultsFilterBar />
         </div>
       </Suspense>
 
@@ -53,10 +55,10 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
         </h2>
 
         <Suspense
-          key={`${q}::${tag ?? ""}`}
-          fallback={<ResultsBodyLoading query={q} tag={tag ?? null} />}
+          key={`${q}::${serializeTags(tags)}`}
+          fallback={<ResultsBodyLoading query={q} tags={tags} />}
         >
-          <ResultsBody q={q} tag={tag} />
+          <ResultsBody q={q} tags={tags} />
         </Suspense>
       </section>
     </div>
@@ -65,8 +67,8 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
 
 /* --------------------------- data + render body -------------------------- */
 
-async function ResultsBody({ q, tag }: { q: string; tag?: string }) {
-  const recipes = await getProvider().search(q, { tag, limit: 8 });
+async function ResultsBody({ q, tags }: { q: string; tags: string[] }) {
+  const recipes = await getProvider().search(q, { tags, limit: 8 });
 
   if (recipes.length === 0) {
     return (
@@ -100,10 +102,10 @@ async function ResultsBody({ q, tag }: { q: string; tag?: string }) {
 
 function ResultsBodyLoading({
   query,
-  tag,
+  tags,
 }: {
   query: string;
-  tag: string | null;
+  tags: string[];
 }) {
   return (
     <>
@@ -113,7 +115,7 @@ function ResultsBodyLoading({
         aria-live="polite"
       >
         <PulseDot />
-        {buildStatus(query, tag)}
+        {buildStatus(query, tags)}
       </p>
 
       <ul className="mt-4 flex flex-col gap-3">
@@ -129,19 +131,21 @@ function ResultsBodyLoading({
 
 /* --------------------------------- copy --------------------------------- */
 
-function buildHeadline(q: string, tag?: string): string {
-  if (q && tag) return `${capitalize(tag)} ideas for "${q}"`;
+function tagsLabel(tags: string[]): string {
+  return tags.map(labelForTag).join(" · ");
+}
+
+function buildHeadline(q: string, tags: string[]): string {
+  const label = tagsLabel(tags);
+  if (q && label) return `${label} ideas for "${q}"`;
   if (q) return `Top recipes for "${q}"`;
-  if (tag) return `${capitalize(tag)} recipes`;
+  if (label) return `${label} recipes`;
   return "Top recipes for you";
 }
 
-function buildStatus(q: string, tag: string | null): string {
+function buildStatus(q: string, tags: string[]): string {
   if (q) return `Reading the top recipes for "${q}"…`;
-  if (tag) return `Curating ${tag.toLowerCase()} recipes from the web…`;
+  if (tags.length)
+    return `Curating ${tagsLabel(tags).toLowerCase()} recipes from the web…`;
   return "Reading the top recipes from the web…";
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }

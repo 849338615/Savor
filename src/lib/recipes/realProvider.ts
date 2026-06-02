@@ -22,18 +22,18 @@ import { decodeRecipeId, encodeRecipeId, gradientIndexForUrl } from "./idEncodin
 export const realProvider: RecipeProvider = {
   async search(query, options: SearchOptions = {}) {
     const limit = options.limit ?? 8;
-    const tag = options.tag;
+    const tags = options.tags ?? [];
 
     // The real backend needs *something* to search for. Empty queries land
     // on the home grid; we substitute a generic seed so the user always sees
     // results on first load.
     const effectiveQuery =
       query.trim() ||
-      [tag, "recipe ideas weeknight dinner"].filter(Boolean).join(" ");
+      [...tags, "recipe ideas weeknight dinner"].filter(Boolean).join(" ");
 
     const scored = await searchAndExtractTopRecipes({
       query: effectiveQuery,
-      tag,
+      tags,
       limit,
     });
 

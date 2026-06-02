@@ -19,8 +19,8 @@ export interface SearchHit {
 export interface SearchOpts {
   /** Free-text user query — appended with " recipe" before being sent. */
   query: string;
-  /** Optional tag/cuisine filter mixed into the query (e.g. "vegetarian"). */
-  tag?: string;
+  /** Optional tag/cuisine filters mixed into the query (e.g. ["vegetarian", "quick"]). */
+  tags?: string[];
   /** How many candidate URLs to ask the search engine for. */
   candidateCount?: number;
 }
@@ -49,8 +49,10 @@ export class SearchUnavailableError extends Error {
   }
 }
 
-function buildQuery({ query, tag }: SearchOpts): string {
-  const parts = [query.trim(), tag, "recipe"].filter(Boolean) as string[];
+function buildQuery({ query, tags }: SearchOpts): string {
+  const parts = [query.trim(), ...(tags ?? []), "recipe"].filter(
+    Boolean,
+  ) as string[];
   return parts.join(" ");
 }
 

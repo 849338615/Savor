@@ -24,6 +24,23 @@ export function difficultyTone(d: Difficulty | string | undefined): string {
 }
 
 /**
+ * Difficulty as *text* color — legible deep variants of the swatch tones,
+ * for painting the label directly on a light surface. Paint with
+ * `style={{ color: difficultyTextTone(d) }}`.
+ */
+export function difficultyTextTone(d: Difficulty | string | undefined): string {
+  switch (d) {
+    case "Easy":
+      return "var(--savor-sage-deep)";
+    case "Hard":
+      return "var(--savor-clay-deep)";
+    case "Medium":
+    default:
+      return "var(--savor-honey-deep)";
+  }
+}
+
+/**
  * Step-section keyword → tone. Best-effort string match against common
  * recipe section names; unknown sections fall back to forest (the brand
  * anchor), which reads as "no special phase, just a step."

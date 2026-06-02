@@ -4,9 +4,10 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { TopBar } from "@/components/layout/TopBar";
 import { SearchBar } from "@/components/search/SearchBar";
-import { FilterChips } from "@/components/search/FilterChips";
+import { ResultsFilterBar } from "@/components/search/ResultsFilterBar";
 import { RecipeResultRowSkeleton } from "@/components/feedback/RecipeResultRowSkeleton";
 import { PulseDot } from "@/components/feedback/PulseDot";
+import { labelForTag, parseTags } from "@/lib/filters";
 
 /**
  * Results loading state — rendered automatically by Next.js while the
@@ -24,7 +25,7 @@ import { PulseDot } from "@/components/feedback/PulseDot";
  */
 export default function ResultsLoading() {
   return (
-    <Suspense fallback={<ResultsLoadingShell query="" tag={null} />}>
+    <Suspense fallback={<ResultsLoadingShell query="" tags={[]} />}>
       <ResultsLoadingClient />
     </Suspense>
   );
@@ -33,19 +34,19 @@ export default function ResultsLoading() {
 function ResultsLoadingClient() {
   const params = useSearchParams();
   const q = params?.get("q") ?? "";
-  const tag = params?.get("tag") ?? null;
-  return <ResultsLoadingShell query={q} tag={tag} />;
+  const tags = parseTags(params?.get("tag"));
+  return <ResultsLoadingShell query={q} tags={tags} />;
 }
 
 function ResultsLoadingShell({
   query,
-  tag,
+  tags,
 }: {
   query: string;
-  tag: string | null;
+  tags: string[];
 }) {
-  const headline = buildHeadline(query, tag);
-  const status = buildStatus(query, tag);
+  const headline = buildHeadline(query, tags);
+  const status = buildStatus(query, tags);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -57,7 +58,7 @@ function ResultsLoadingShell({
 
       <Suspense fallback={<div className="h-10" />}>
         <div className="mt-4 px-6">
-          <FilterChips />
+          <ResultsFilterBar />
         </div>
       </Suspense>
 
@@ -86,19 +87,21 @@ function ResultsLoadingShell({
   );
 }
 
-function buildHeadline(q: string, tag: string | null): string {
-  if (q && tag) return `${capitalize(tag)} ideas for "${q}"`;
+function tagsLabel(tags: string[]): string {
+  return tags.map(labelForTag).join(" · ");
+}
+
+function buildHeadline(q: string, tags: string[]): string {
+  const label = tagsLabel(tags);
+  if (q && label) return `${label} ideas for "${q}"`;
   if (q) return `Top recipes for "${q}"`;
-  if (tag) return `${capitalize(tag)} recipes`;
+  if (label) return `${label} recipes`;
   return "Top recipes for you";
 }
 
-function buildStatus(q: string, tag: string | null): string {
+function buildStatus(q: string, tags: string[]): string {
   if (q) return `Reading the top recipes for "${q}"…`;
-  if (tag) return `Curating ${tag.toLowerCase()} recipes from the web…`;
+  if (tags.length)
+    return `Curating ${tagsLabel(tags).toLowerCase()} recipes from the web…`;
   return "Reading the top recipes from the web…";
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }

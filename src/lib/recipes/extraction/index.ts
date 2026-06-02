@@ -48,7 +48,7 @@ const CONCURRENCY = 6;
 
 export interface SearchAndExtractOpts {
   query: string;
-  tag?: string;
+  tags?: string[];
   limit?: number;
   candidateCount?: number;
   /** Set to false to skip LLM fallback (JSON-LD only). */
@@ -59,13 +59,14 @@ export async function searchAndExtractTopRecipes(
   opts: SearchAndExtractOpts,
 ): Promise<ScoredCandidate[]> {
   const limit = opts.limit ?? 8;
-  const cacheKey = `${opts.query}::${opts.tag ?? ""}`;
+  const tags = opts.tags ?? [];
+  const cacheKey = `${opts.query}::${tags.join(",")}`;
   const cached = SEARCH_CACHE.get(cacheKey);
   if (cached) return cached.slice(0, limit);
 
   const hits = await searchWebUrls({
     query: opts.query,
-    tag: opts.tag,
+    tags,
     candidateCount: opts.candidateCount ?? 30,
   });
 

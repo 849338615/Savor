@@ -10,6 +10,7 @@
   --savor-forest-deep: #173b2c;
   --savor-sage: #7ba489;
   --savor-sage-mist: #c9d8c6;
+  --savor-sage-deep: oklch(48% 0.07 150);     /* deep sage for ink-on-sage / easy text */
   --savor-cream: #f6f1e8;
   --savor-paper: #fffcf6;
   --savor-soft-white: #faf7f2;
@@ -122,6 +123,7 @@
   --color-forest-deep: var(--savor-forest-deep);
   --color-sage: var(--savor-sage);
   --color-sage-mist: var(--savor-sage-mist);
+  --color-sage-deep: var(--savor-sage-deep);
   --color-cream: var(--savor-cream);
   --color-paper: var(--savor-paper);
   --color-soft-white: var(--savor-soft-white);

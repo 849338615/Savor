@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock, Star } from "lucide-react";
 import type { RecipeSummary } from "@/lib/recipes/types";
-import { cn, difficultyTone, formatMinutes } from "@/lib/utils";
+import { difficultyTextTone, formatMinutes } from "@/lib/utils";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "./RecipePhoto";
 
@@ -52,7 +52,7 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
           ) : null}
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] tabular-nums text-stone">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[12px] tabular-nums text-stone">
           {hasRating ? (
             <span className="inline-flex items-center gap-1 text-ink">
               <Star
@@ -72,36 +72,23 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
               ) : null}
             </span>
           ) : null}
-          {hasRating && (hasTime || recipe.difficulty) ? <Dot /> : null}
           {hasTime ? (
             <span className="inline-flex items-center gap-1">
               <Clock size={12} strokeWidth={1.6} aria-hidden />
               {formatMinutes(recipe.totalMinutes)}
             </span>
           ) : null}
-          {hasTime && recipe.difficulty ? <Dot /> : null}
           {recipe.difficulty ? (
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                aria-hidden
-                className="h-[6px] w-[6px] rounded-full"
-                style={{ background: difficultyTone(recipe.difficulty) }}
-              />
+            <span
+              className="font-medium"
+              style={{ color: difficultyTextTone(recipe.difficulty) }}
+            >
               {recipe.difficulty}
             </span>
           ) : null}
         </div>
       </div>
     </Link>
-  );
-}
-
-function Dot() {
-  return (
-    <span
-      aria-hidden
-      className={cn("h-[3px] w-[3px] shrink-0 rounded-full bg-[color:var(--fg-3)]")}
-    />
   );
 }
 

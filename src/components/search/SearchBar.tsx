@@ -4,12 +4,15 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
+import { serializeTags } from "@/lib/filters";
 
 interface SearchBarProps {
   defaultValue?: string;
   autoFocus?: boolean;
   className?: string;
   size?: "md" | "lg";
+  /** Filter tags to carry into the search URL (staged on home, active on results). */
+  carryTags?: string[];
 }
 
 /**
@@ -37,6 +40,7 @@ export function SearchBar({
   autoFocus,
   className,
   size = "md",
+  carryTags = [],
 }: SearchBarProps) {
   const router = useRouter();
   const [value, setValue] = useState(defaultValue);
@@ -45,7 +49,9 @@ export function SearchBar({
     e.preventDefault();
     const q = value.trim();
     if (!q) return;
-    router.push(`/results?q=${encodeURIComponent(q)}`);
+    const params = new URLSearchParams({ q });
+    if (carryTags.length) params.set("tag", serializeTags(carryTags));
+    router.push(`/results?${params.toString()}`);
   }
 
   return (

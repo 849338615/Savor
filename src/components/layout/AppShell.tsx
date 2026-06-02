@@ -18,7 +18,10 @@ import { AmbientLayer, Bloom } from "./AmbientBackground";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-dvh w-full bg-cream flex justify-center overflow-hidden">
-      <div className="relative flex h-full w-full max-w-[440px] flex-col bg-soft-white shadow-[0_0_0_1px_var(--color-mist)] sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-[28px] sm:shadow-[var(--shadow-app-edge),0_0_0_1px_var(--color-mist)] sm:overflow-hidden">
+      <div
+        id="app-frame"
+        className="relative flex h-full w-full max-w-[440px] flex-col bg-soft-white shadow-[0_0_0_1px_var(--color-mist)] sm:my-6 sm:h-[calc(100dvh-3rem)] sm:rounded-[28px] sm:shadow-[var(--shadow-app-edge),0_0_0_1px_var(--color-mist)] sm:overflow-hidden"
+      >
         {/* App-wide ambient warmth — a sand bloom in the upper-right
             that plays through every screen as the base identity layer.
             Sized and angled to stay clear of where content typically

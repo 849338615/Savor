@@ -1,6 +1,4 @@
-import { Suspense } from "react";
-import { SearchBar } from "@/components/search/SearchBar";
-import { FilterChips } from "@/components/search/FilterChips";
+import { HomeSearchControls } from "@/components/home/HomeSearchControls";
 import { WelcomeHero } from "@/components/home/WelcomeHero";
 import { HomeAmbience } from "@/components/home/HomeAmbience";
 
@@ -28,7 +26,7 @@ export default function Home() {
       >
         <WelcomeHero />
         <p className="max-w-[30ch] text-[15px] leading-[1.6] text-stone text-balance">
-          Search a dish, an ingredient, or pick a mood. We&rsquo;ll guide you,
+          Search a dish, an ingredient, or pick a mood. Savor will guide you,
           one step at a time.
         </p>
       </section>
@@ -39,15 +37,7 @@ export default function Home() {
       {/* Anchored action zone — caption and chips cluster tight, search
           breathes alone as the primary action */}
       <section className="relative z-10 flex flex-col px-6 pb-5 pt-6">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
-          Try a mood
-        </p>
-        <Suspense fallback={<div className="h-9" />}>
-          <FilterChips />
-        </Suspense>
-        <div className="pt-6">
-          <SearchBar size="lg" />
-        </div>
+        <HomeSearchControls />
       </section>
     </div>
   );
