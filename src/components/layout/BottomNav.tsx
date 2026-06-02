@@ -93,7 +93,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="sticky bottom-0 z-30 border-t border-[var(--border-hairline)] bg-soft-white"
+      className="sticky bottom-0 z-30 border-t border-[var(--border-hairline)] bg-cream"
       style={{
         paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
       }}

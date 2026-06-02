@@ -1,5 +1,6 @@
 import { BottomNav } from "./BottomNav";
 import { AmbientLayer, Bloom } from "./AmbientBackground";
+import { SplashScreen } from "./SplashScreen";
 
 /**
  * Phone-first frame. On larger screens the column is constrained so the
@@ -43,6 +44,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <BottomNav />
+
+        {/* Launch screen — top layer of the card, server-rendered inline so it
+            covers the app from first paint (see SplashScreen for the why). */}
+        <SplashScreen />
+        {/* No-JS: never strand visitors on a logo that can't animate away. */}
+        <noscript>
+          <style>{`.savor-splash{display:none!important}`}</style>
+        </noscript>
       </div>
     </div>
   );
