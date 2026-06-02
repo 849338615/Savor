@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { AmbientLayer, Bloom } from "./AmbientBackground";
 
 /**
@@ -37,20 +37,36 @@ const EASE_SOFT = [0.16, 1, 0.3, 1] as const; // --ease-out-soft
 const HOLD_MS = 2300; // calm beat before the screen lifts away
 const HOLD_REDUCED_MS = 850;
 
+/**
+ * Read `prefers-reduced-motion` in an SSR/hydration-safe way. The server (and
+ * the first client render) get `false`, so the markup matches and hydration
+ * never fails; React then re-renders with the real value. Using
+ * `useSyncExternalStore` (the same pattern as <WelcomeHero />) keeps this out
+ * of an effect, so it sidesteps cascading-render lint and reads cleanly.
+ */
+let reducedMql: MediaQueryList | null = null;
+const reducedQuery = "(prefers-reduced-motion: reduce)";
+function getReducedMql() {
+  return (reducedMql ??= window.matchMedia(reducedQuery));
+}
+function subscribeReduced(onChange: () => void) {
+  const mql = getReducedMql();
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+function usePrefersReducedMotion() {
+  return useSyncExternalStore(
+    subscribeReduced,
+    () => getReducedMql().matches,
+    () => false,
+  );
+}
+
 export function SplashScreen() {
-  // `useReducedMotion` resolves to the real preference only on the client, so
-  // reading it during the first render would diverge from the server-rendered
-  // HTML and fail hydration. Gate it behind `mounted` (the same pattern the
-  // rest of the app uses): server + first client render both treat motion as
-  // allowed — identical markup — then the true preference applies after mount.
-  const prefersReduced = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-  const reduce = mounted && !!prefersReduced;
+  const reduce = usePrefersReducedMotion();
   const [show, setShow] = useState(true);
 
   const dismiss = useCallback(() => setShow(false), []);
-
-  useEffect(() => setMounted(true), []);
 
   // Auto-dismiss after the hold; allow a tap / key press to skip ahead.
   useEffect(() => {
@@ -107,8 +123,12 @@ export function SplashScreen() {
           <div className="relative z-10 -mt-6 flex flex-col items-center px-8">
             <MarkStage reduce={!!reduce} />
 
-            {/* Wordmark — wipes in left-to-right, blur resolving to sharp. */}
+            {/* Wordmark — wipes in left-to-right, blur resolving to sharp.
+                Keyed on `reduce` so resolving the preference after mount
+                remounts with the reduced transition from t=0 (a swap of only
+                the transition would keep the full-motion delay baked in). */}
             <motion.img
+              key={`word-${reduce ? "r" : "f"}`}
               src="/brand/savor-wordmark-cut.png"
               alt="Savor"
               width={150}
@@ -117,41 +137,38 @@ export function SplashScreen() {
               decoding="sync"
               draggable={false}
               className="mt-[22px] h-auto w-[150px] select-none"
-              initial={
-                reduce
-                  ? { opacity: 0 }
-                  : {
-                      opacity: 0,
-                      clipPath: "inset(0 100% 0 0)",
-                      filter: "blur(7px)",
-                    }
-              }
-              animate={
-                reduce
-                  ? { opacity: 1 }
-                  : {
-                      opacity: 1,
-                      clipPath: "inset(0 0% 0 0)",
-                      filter: "blur(0px)",
-                    }
-              }
-              transition={{
-                duration: reduce ? 0.4 : 0.82,
-                ease: EASE_SOFT,
-                delay: reduce ? 0.1 : 0.72,
+              // Constant initial/animate (same keys in both modes) so the
+              // mount-gate's first no-preference render can't strand a property
+              // at its hidden value. Reduced motion fades opacity and snaps the
+              // clip/blur via the `default` transition — a calm fade, no wipe.
+              initial={{
+                opacity: 0,
+                clipPath: "inset(0 100% 0 0)",
+                filter: "blur(7px)",
               }}
+              animate={{
+                opacity: 1,
+                clipPath: "inset(0 0% 0 0)",
+                filter: "blur(0px)",
+              }}
+              transition={
+                reduce
+                  ? { opacity: { duration: 0.45, delay: 0.08 }, default: { duration: 0.001 } }
+                  : { duration: 0.82, ease: EASE_SOFT, delay: 0.72 }
+              }
             />
 
             {/* Hairline tagline — echoes the WelcomeHero eyebrow motif. */}
             <motion.div
+              key={`tag-${reduce ? "r" : "f"}`}
               className="mt-5 flex items-center gap-3"
-              initial={{ opacity: 0, y: reduce ? 0 : 4 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                ease: EASE_SOFT,
-                delay: reduce ? 0.18 : 1.35,
-              }}
+              transition={
+                reduce
+                  ? { opacity: { duration: 0.45, delay: 0.12 }, default: { duration: 0.001 } }
+                  : { duration: 0.6, ease: EASE_SOFT, delay: 1.35 }
+              }
             >
               <span className="block h-px w-6 bg-[color-mix(in_oklch,var(--color-olive)_60%,transparent)]" />
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-olive">
@@ -200,9 +217,14 @@ function MarkStage({ reduce }: { reduce: boolean }) {
     <div className="relative flex items-center justify-center">
       {!reduce && <Steam />}
       <motion.div
-        initial={{ opacity: 0, scale: 0.86, y: reduce ? 0 : 10 }}
+        key={`mark-${reduce ? "r" : "f"}`}
+        initial={{ opacity: 0, scale: 0.86, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: reduce ? 0.45 : 0.9, ease: EASE_SOFT, delay: 0.12 }}
+        transition={
+          reduce
+            ? { opacity: { duration: 0.5, delay: 0.05 }, default: { duration: 0.001 } }
+            : { duration: 0.9, ease: EASE_SOFT, delay: 0.12 }
+        }
       >
         <motion.div
           animate={reduce ? undefined : { scale: [1, 1.018, 1] }}
