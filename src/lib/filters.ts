@@ -21,6 +21,12 @@ export interface FilterGroup {
   options: FilterOption[];
 }
 
+/**
+ * Groups are ordered the way people actually narrow a craving:
+ * occasion → cuisine → dietary constraints → effort → vibe. Each tag is a
+ * search-friendly token (folded into the web query) that also overlaps the
+ * mock dataset where possible.
+ */
 export const FILTER_GROUPS: FilterGroup[] = [
   {
     id: "meal",
@@ -29,7 +35,19 @@ export const FILTER_GROUPS: FilterGroup[] = [
       { label: "Breakfast", tag: "brunch" },
       { label: "Lunch", tag: "lunch" },
       { label: "Dinner", tag: "dinner" },
+      { label: "Snack", tag: "snack" },
       { label: "Dessert", tag: "dessert" },
+    ],
+  },
+  {
+    id: "cuisine",
+    label: "Cuisine",
+    options: [
+      { label: "Italian", tag: "italian" },
+      { label: "Mexican", tag: "mexican" },
+      { label: "Asian", tag: "asian" },
+      { label: "Mediterranean", tag: "mediterranean" },
+      { label: "Indian", tag: "indian" },
     ],
   },
   {
@@ -38,6 +56,9 @@ export const FILTER_GROUPS: FilterGroup[] = [
     options: [
       { label: "Vegetarian", tag: "vegetarian" },
       { label: "Vegan", tag: "vegan" },
+      { label: "Gluten-free", tag: "gluten-free" },
+      { label: "Dairy-free", tag: "dairy-free" },
+      { label: "High-protein", tag: "high-protein" },
     ],
   },
   {
@@ -45,8 +66,10 @@ export const FILTER_GROUPS: FilterGroup[] = [
     label: "Time & effort",
     options: [
       { label: "Quick", tag: "quick" },
-      { label: "Light", tag: "light" },
+      { label: "5-ingredient", tag: "5-ingredient" },
       { label: "One-pan", tag: "one-pan" },
+      { label: "Make-ahead", tag: "make-ahead" },
+      { label: "Light", tag: "light" },
     ],
   },
   {
@@ -55,11 +78,21 @@ export const FILTER_GROUPS: FilterGroup[] = [
     options: [
       { label: "Comfort", tag: "comfort" },
       { label: "Fresh", tag: "salad" },
+      { label: "Healthy", tag: "healthy" },
+      { label: "Spicy", tag: "spicy" },
     ],
   },
 ];
 
 const ALL_OPTIONS: FilterOption[] = FILTER_GROUPS.flatMap((g) => g.options);
+
+/**
+ * The "Diet" group, surfaced on its own so the standing dietary-preferences
+ * setting and the per-search filter panel share one taxonomy — saved
+ * preferences carry the same search tags the filters already use.
+ */
+export const DIET_OPTIONS: FilterOption[] =
+  FILTER_GROUPS.find((g) => g.id === "diet")?.options ?? [];
 
 /** Parse the comma-joined `tag` URL param into a clean list of tags. */
 export function parseTags(param?: string | null): string[] {

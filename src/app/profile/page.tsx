@@ -5,7 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { useSaved } from "@/hooks/useSaved";
 import { useCookingSession } from "@/hooks/useCookingSession";
 import { useUnits } from "@/hooks/useUnits";
+import { useDietary } from "@/hooks/useDietary";
 import { unitSystemLabel } from "@/lib/units/convert";
+import { labelForTag } from "@/lib/filters";
 import {
   AmbientLayer,
   Bloom,
@@ -29,9 +31,22 @@ export default function ProfilePage() {
   const unitSystem = useUnits((s) => s.system);
   const unitsHydrated = useUnits((s) => s.hasHydrated);
 
+  const dietaryTags = useDietary((s) => s.tags);
+  const dietaryHydrated = useDietary((s) => s.hasHydrated);
+  const dietaryMeta =
+    !dietaryHydrated || dietaryTags.length === 0
+      ? "Not set"
+      : dietaryTags.length === 1
+        ? labelForTag(dietaryTags[0])
+        : `${dietaryTags.length} selected`;
+
   const rows: Row[] = [
     { label: "Saved recipes", meta: String(savedCount), href: "/saved" },
-    { label: "Dietary preferences", meta: "Not set" },
+    {
+      label: "Dietary preferences",
+      meta: dietaryMeta,
+      href: "/profile/dietary",
+    },
     {
       label: "Units",
       meta: unitsHydrated ? unitSystemLabel(unitSystem) : "Metric",
