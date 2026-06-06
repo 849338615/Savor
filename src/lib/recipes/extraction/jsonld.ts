@@ -58,7 +58,7 @@ export function parseJsonLdRecipe(html: string): RawJsonLdRecipe | null {
 
 /* --------------------------- block enumeration --------------------------- */
 
-function extractJsonLdBlocks(html: string): unknown[] {
+export function extractJsonLdBlocks(html: string): unknown[] {
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   const blocks: unknown[] = [];
   let match: RegExpExecArray | null;

@@ -1,4 +1,4 @@
-import type { RecipeProvider, SearchOptions } from "./provider";
+import type { RecipeProvider, SearchOptions, SearchResult } from "./provider";
 import type {
   Recipe,
   RecipeSummary,
@@ -7,10 +7,14 @@ import type {
   Difficulty,
 } from "./types";
 import { extractOne, searchAndExtractTopRecipes } from "./extraction";
+import { isHardQuery, planQuery, type QueryPlan } from "./extraction/queryPlanner";
 import { extractStepDurationSeconds } from "./extraction/parseDuration";
 import type { ExtractedCandidate, ExtractedIngredient } from "./extraction/types";
 import type { ScoredCandidate } from "./extraction/scoring";
 import { decodeRecipeId, encodeRecipeId, gradientIndexForUrl } from "./idEncoding";
+
+/** Below this, a search is "weak" enough to spend a planner call + retry on. */
+const WEAK_RESULTS = 3;
 
 /**
  * Real recipe provider — search + extract + score from the live web.
@@ -20,26 +24,60 @@ import { decodeRecipeId, encodeRecipeId, gradientIndexForUrl } from "./idEncodin
  * env-driven selection.
  */
 export const realProvider: RecipeProvider = {
-  async search(query, options: SearchOptions = {}) {
+  async search(query, options: SearchOptions = {}): Promise<SearchResult> {
     const limit = options.limit ?? 8;
     const tags = options.tags ?? [];
+    const trimmed = query.trim();
 
     // The real backend needs *something* to search for. Empty queries land
     // on the home grid; we substitute a generic seed so the user always sees
     // results on first load.
-    const effectiveQuery =
-      query.trim() ||
+    const seededQuery =
+      trimmed ||
       [...tags, "recipe ideas weeknight dinner"].filter(Boolean).join(" ");
 
-    const scored = await searchAndExtractTopRecipes({
-      query: effectiveQuery,
-      tags,
-      limit,
-    });
+    // Long / over-specified queries are planned up front: searching the core
+    // dish (instead of every constraint ANDed together) returns mainstream,
+    // well-structured sources. Normal dish queries skip the planner entirely.
+    let plan: QueryPlan | null = null;
+    if (trimmed && isHardQuery(trimmed)) {
+      plan = await planQuery(trimmed);
+    }
 
-    return scored.map(({ candidate }) =>
-      toSummary(candidate, scoredRatingHint(scored, candidate)),
-    );
+    const primaryQuery = plan?.searchQuery || seededQuery;
+    const primary = await searchAndExtractTopRecipes({
+      query: primaryQuery,
+      tags: mergeTags(tags, plan?.tags),
+      limit,
+      relevanceQuery: plan?.dish || trimmed,
+    });
+    let results = primary.results;
+    let correction = plan?.corrected ?? primary.correctedQuery;
+
+    // Weak result: a real query came up nearly empty. Plan it now (if we
+    // haven't) and retry with the bare-dish fallback — this rescues both
+    // garbled queries the engine didn't auto-correct and over-narrow searches.
+    if (results.length < WEAK_RESULTS && trimmed) {
+      plan ??= await planQuery(trimmed);
+      const fallback = plan?.relaxedQuery || plan?.dish;
+      if (fallback && fallback.toLowerCase() !== primaryQuery.toLowerCase()) {
+        const retry = await searchAndExtractTopRecipes({
+          query: fallback,
+          tags: mergeTags(tags, plan?.tags),
+          limit,
+          relevanceQuery: plan?.dish || fallback,
+        });
+        if (retry.results.length > results.length) results = retry.results;
+        correction ??= plan?.corrected ?? retry.correctedQuery;
+      }
+    }
+
+    return {
+      recipes: results.map(({ candidate }) =>
+        toSummary(candidate, scoredRatingHint(results, candidate)),
+      ),
+      correction: meaningfulCorrection(correction, trimmed),
+    };
   },
 
   async getRecipe(id) {
@@ -52,6 +90,25 @@ export const realProvider: RecipeProvider = {
     return toRecipe(candidate);
   },
 };
+
+/* ----------------------------- query helpers ----------------------------- */
+
+/** Union of user-selected tags and planner-derived tags, deduped. */
+function mergeTags(userTags: string[], planTags?: string[]): string[] {
+  if (!planTags?.length) return userTags;
+  return [...new Set([...userTags, ...planTags])];
+}
+
+/** Only surface a correction that actually differs from what the user typed. */
+function meaningfulCorrection(
+  correction: string | undefined,
+  original: string,
+): string | undefined {
+  if (!correction) return undefined;
+  const c = correction.trim();
+  if (!c || c.toLowerCase() === original.trim().toLowerCase()) return undefined;
+  return c;
+}
 
 /* ----------------------- candidate → app types ----------------------- */
 

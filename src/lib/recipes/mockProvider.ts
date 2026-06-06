@@ -1,5 +1,5 @@
 import { RECIPES } from "./mockData";
-import type { RecipeProvider, SearchOptions } from "./provider";
+import type { RecipeProvider, SearchOptions, SearchResult } from "./provider";
 import type { Recipe, RecipeSummary } from "./types";
 
 function toSummary(r: Recipe): RecipeSummary {
@@ -43,7 +43,7 @@ function score(recipe: Recipe, query: string): number {
 }
 
 export const mockProvider: RecipeProvider = {
-  async search(query, options: SearchOptions = {}) {
+  async search(query, options: SearchOptions = {}): Promise<SearchResult> {
     const limit = options.limit ?? 8;
     const tags = (options.tags ?? []).map((t) => t.toLowerCase());
 
@@ -57,15 +57,16 @@ export const mockProvider: RecipeProvider = {
 
     if (!query.trim()) {
       // No query — return top by tag (or all), preserving array order.
-      return candidates.slice(0, limit).map(toSummary);
+      return { recipes: candidates.slice(0, limit).map(toSummary) };
     }
 
-    return candidates
+    const recipes = candidates
       .map((r) => ({ r, s: score(r, query) }))
       .filter((x) => x.s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, limit)
       .map(({ r }) => toSummary(r));
+    return { recipes };
   },
 
   async getRecipe(id) {

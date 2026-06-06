@@ -29,9 +29,15 @@ export class TtlCache<V> {
     return entry.value;
   }
 
-  set(key: string, value: V): void {
+  /**
+   * Cache `value` under `key`. Pass `ttlMs` to override the cache's default
+   * TTL for this entry — used to keep low-confidence results (e.g. a search
+   * that came up short, likely from a transient fetch failure) around only
+   * briefly so the next request retries instead of being stuck with them.
+   */
+  set(key: string, value: V, ttlMs: number = this.ttlMs): void {
     if (this.store.has(key)) this.store.delete(key);
-    this.store.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+    this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
     while (this.store.size > this.maxEntries) {
       const oldest = this.store.keys().next().value;
       if (oldest === undefined) break;

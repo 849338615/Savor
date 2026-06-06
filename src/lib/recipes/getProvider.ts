@@ -54,8 +54,8 @@ function wrapWithMockFallback(real: RecipeProvider): RecipeProvider {
   return {
     async search(query: string, options?: SearchOptions) {
       try {
-        const results = await real.search(query, options);
-        if (results.length > 0) return results;
+        const result = await real.search(query, options);
+        if (result.recipes.length > 0) return result;
       } catch (err) {
         console.error("[getProvider] real search failed, falling back:", err);
       }

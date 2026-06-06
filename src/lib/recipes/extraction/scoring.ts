@@ -34,6 +34,7 @@ export interface ScoredCandidate {
     rankScore: number;
     domainScore: number;
     completenessScore: number;
+    relevanceScore: number;
   };
 }
 
@@ -121,13 +122,17 @@ export function isBlockedDomain(url: string): boolean {
   }
 }
 
-export function scoreCandidate(c: ExtractedCandidate): ScoredCandidate | null {
+export function scoreCandidate(
+  c: ExtractedCandidate,
+  queryTerms: string[] = [],
+): ScoredCandidate | null {
   const completenessScore = scoreCompleteness(c);
   if (completenessScore < 0) return null; // hard veto
 
   const ratingScore = scoreRating(c);
   const rankScore = scoreRank(c.searchRank);
   const domainScore = scoreDomain(c.url);
+  const relevanceScore = scoreRelevance(c, queryTerms);
 
   // Unverified LLM extractions get a soft penalty so a verified competitor
   // with the same base score wins. They still appear in results when nothing
@@ -135,12 +140,43 @@ export function scoreCandidate(c: ExtractedCandidate): ScoredCandidate | null {
   const unverifiedPenalty = c.via === "llm-unverified" ? -3 : 0;
 
   const score =
-    ratingScore + rankScore + domainScore + completenessScore + unverifiedPenalty;
+    ratingScore +
+    rankScore +
+    domainScore +
+    completenessScore +
+    relevanceScore +
+    unverifiedPenalty;
   return {
     candidate: c,
     score,
-    parts: { ratingScore, rankScore, domainScore, completenessScore },
+    parts: { ratingScore, rankScore, domainScore, completenessScore, relevanceScore },
   };
+}
+
+/* ------------------------------ query terms ------------------------------ */
+
+/**
+ * Words that are noise for relevance matching — search scaffolding and generic
+ * qualifiers that appear in titles regardless of the dish.
+ */
+const QUERY_STOPWORDS = new Set([
+  "recipe", "recipes", "the", "and", "for", "with", "without", "best",
+  "easy", "quick", "homemade", "how", "make", "your", "good", "great",
+  "from", "scratch", "simple", "classic", "perfect", "ultimate",
+]);
+
+/**
+ * Reduce a free-text query to the content terms used for relevance scoring.
+ * Drops punctuation, scaffolding words, and very short tokens. Capped so a
+ * pathologically long query can't blow up scoring.
+ */
+export function parseQueryTerms(q: string): string[] {
+  return q
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length >= 3 && !QUERY_STOPWORDS.has(t))
+    .slice(0, 8);
 }
 
 /* --------------------------- subscore functions --------------------------- */
@@ -175,6 +211,38 @@ function scoreDomain(url: string): number {
   } catch {
     return 0;
   }
+}
+
+/**
+ * Reward candidates whose title (and, more weakly, tags/description) actually
+ * match what was searched, and penalize a total miss. Rating-based scoring
+ * alone is query-blind: a five-star recipe harvested from a mixed roundup
+ * ("30 chicken dinners") could outrank the dish the user actually asked for.
+ * This signal keeps results *on topic* — most important for phase-2 harvested
+ * results, which aren't guaranteed relevant by the search engine.
+ *
+ * Neutral (0) when there's no query (tag-only / empty browse), so it never
+ * penalizes the home grid.
+ */
+function scoreRelevance(c: ExtractedCandidate, queryTerms: string[]): number {
+  if (queryTerms.length === 0) return 0;
+
+  const title = c.title.toLowerCase();
+  const meta = `${c.tags.join(" ")} ${c.description ?? ""}`.toLowerCase();
+
+  let inTitle = 0;
+  let inMeta = 0;
+  for (const term of queryTerms) {
+    if (title.includes(term)) inTitle++;
+    else if (meta.includes(term)) inMeta++;
+  }
+
+  // A candidate that matches the query nowhere is almost certainly off-topic
+  // drift from a roundup — push it below anything that does match.
+  if (inTitle === 0 && inMeta === 0) return -5;
+
+  const n = queryTerms.length;
+  return (inTitle / n) * 8 + (inMeta / n) * 2;
 }
 
 function scoreCompleteness(c: ExtractedCandidate): number {

@@ -68,7 +68,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
 /* --------------------------- data + render body -------------------------- */
 
 async function ResultsBody({ q, tags }: { q: string; tags: string[] }) {
-  const recipes = await getProvider().search(q, { tags, limit: 8 });
+  const { recipes, correction } = await getProvider().search(q, { tags, limit: 8 });
 
   if (recipes.length === 0) {
     return (
@@ -85,7 +85,16 @@ async function ResultsBody({ q, tags }: { q: string; tags: string[] }) {
 
   return (
     <>
-      <p className="mt-2 text-[12px] text-stone">{pluralize(recipes.length, "result")}</p>
+      <p className="mt-2 text-[12px] text-stone">
+        {correction ? (
+          <>
+            Showing results for{" "}
+            <span className="font-medium text-ink">{correction}</span>
+            {" · "}
+          </>
+        ) : null}
+        {pluralize(recipes.length, "result")}
+      </p>
 
       <ul className="mt-4 flex flex-col gap-3">
         {recipes.map((recipe) => (
