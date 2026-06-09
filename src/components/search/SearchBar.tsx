@@ -61,7 +61,7 @@ export function SearchBar({
       action="/results"
       method="get"
       className={cn(
-        "group flex w-full items-center gap-2.5 rounded-[var(--radius-pill)] border border-[var(--border-hairline)] bg-surface px-[18px] transition-colors focus-within:border-forest focus-within:shadow-[var(--shadow-focus)]",
+        "group flex w-full items-center gap-2.5 rounded-[var(--radius-pill)] border border-[var(--border-hairline)] bg-surface px-[18px] transition-colors",
         size === "lg" ? "py-[14px]" : "py-[13px]",
         className,
       )}
@@ -86,7 +86,7 @@ export function SearchBar({
         autoFocus={autoFocus}
         placeholder="Search recipes, ingredients…"
         aria-label="Search recipes"
-        className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-[color:var(--fg-2)] outline-none focus-visible:outline-none"
+        className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-[color:var(--fg-2)] outline-none! focus-visible:outline-none!"
       />
       {value && (
         <button
