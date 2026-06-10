@@ -323,17 +323,13 @@ input[type="search"]::-webkit-search-results-decoration {
    the page content moves.
    ========================================================================== */
 
-/* Peer destinations — tabs, in-place results refine: a "fade through" the
-   cream background, NOT a crossfade. The old screen leaves fully (and fast)
-   *before* the new one arrives, so the two never sit on screen together as a
-   washed-out double image — the #1 cause of the old screen appearing to
-   "linger and overlap". The brief gap is just the app's own cream surface, so
-   it reads as a clean swap rather than ghosting. */
+/* Peer destinations — tabs, in-place results refine: a calm crossfade that
+   settles upward. "Same place, different content." */
 ::view-transition-old(.vt-crossfade) {
-  animation: 90ms var(--ease-standard) both vt-fade-out;
+  animation: var(--duration-fast) var(--ease-standard) both vt-fade-out;
 }
 ::view-transition-new(.vt-crossfade) {
-  animation: var(--duration-base) var(--ease-out-soft) 90ms both vt-fade-in-up;
+  animation: var(--duration-base) var(--ease-out-soft) 60ms both vt-fade-in-up;
 }
 
 /* Forward — going deeper (open a recipe, search, open a setting): the new
@@ -428,6 +424,16 @@ input[type="search"]::-webkit-search-results-decoration {
 ::view-transition-group(bottom-nav),
 ::view-transition-group(ambient-bg),
 ::view-transition-group(root) {
+  animation: none;
+}
+
+/* Pin the page group so its container doesn't morph between pages of
+   different heights — otherwise the UA's default group animation scales the
+   content as it cross-fades/slides (a subtle "settle"). Screens share the
+   same 440px width and are top-aligned, so the only difference is height
+   below the fold; holding the group keeps the old/new snapshots at their true
+   size while their own fade/slide does the motion. */
+::view-transition-group(page) {
   animation: none;
 }
 ::view-transition-group(bottom-nav) {
