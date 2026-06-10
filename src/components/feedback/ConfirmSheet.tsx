@@ -27,10 +27,10 @@ interface ConfirmSheetProps {
  *  - Focus moves to the safe action on open (iOS HIG: the default button
  *    is the calm one; the destructive action is opt-in).
  *  - Body scroll is locked while the sheet is open.
- *  - Portal-rendered so it always sits above page chrome regardless of
- *    nested overflow:hidden / z-index contexts.
- *  - Constrained to the AppShell's phone-card column on desktop so the
- *    sheet doesn't bleed past the frame.
+ *  - Portal-rendered into the AppShell phone-card (#app-frame) so the
+ *    scrim + sheet stay bounded by the app frame instead of bleeding
+ *    across the whole desktop viewport, while still sitting above page
+ *    chrome regardless of nested overflow:hidden / z-index contexts.
  */
 export function ConfirmSheet({
   open,
@@ -41,12 +41,17 @@ export function ConfirmSheet({
   onConfirm,
   onCancel,
 }: ConfirmSheetProps) {
-  const [mounted, setMounted] = useState(false);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descId = useId();
 
-  useEffect(() => setMounted(true), []);
+  // Mount into the AppShell phone-card so the scrim + sheet stay inside the
+  // app frame rather than bleeding across the whole desktop viewport. Falls
+  // back to <body> if the frame is absent. Mirrors FilterPanel.
+  useEffect(() => {
+    setContainer(document.getElementById("app-frame") ?? document.body);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -54,23 +59,25 @@ export function ConfirmSheet({
       if (e.key === "Escape") onCancel();
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Lock the card's scroll host (the scrolling <main>) while open.
+    const scrollHost = document.querySelector<HTMLElement>("#app-frame main");
+    const prevOverflow = scrollHost?.style.overflow ?? "";
+    if (scrollHost) scrollHost.style.overflow = "hidden";
     const t = window.setTimeout(() => cancelRef.current?.focus(), 50);
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
+      if (scrollHost) scrollHost.style.overflow = prevOverflow;
       window.clearTimeout(t);
     };
   }, [open, onCancel]);
 
-  if (!mounted) return null;
+  if (!container) return null;
 
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim-modal)] backdrop-blur-sm sm:p-6"
+          className="absolute inset-0 z-50 flex items-end justify-center bg-[var(--scrim-modal)] backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -83,7 +90,7 @@ export function ConfirmSheet({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={descId}
-            className="w-full max-w-[440px] rounded-t-[var(--radius-2xl)] bg-soft-white px-6 pb-8 pt-7 shadow-[var(--shadow-lg)] sm:rounded-[var(--radius-2xl)]"
+            className="w-full rounded-t-[var(--radius-2xl)] bg-soft-white px-6 pb-8 pt-7 shadow-[var(--shadow-lg)]"
             style={{
               paddingBottom: "max(env(safe-area-inset-bottom), 2rem)",
             }}
@@ -134,6 +141,6 @@ export function ConfirmSheet({
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body,
+    container,
   );
 }

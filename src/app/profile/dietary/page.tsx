@@ -32,21 +32,18 @@ export default function DietaryPreferencesPage() {
         <ul
           role="group"
           aria-label="Dietary preferences"
-          className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
+          className="flex flex-col gap-2.5"
         >
-          {DIET_OPTIONS.map((opt, i) => {
+          {DIET_OPTIONS.map((opt) => {
             const checked = selected.includes(opt.tag);
             return (
-              <li key={opt.tag} className="bg-surface">
+              <li key={opt.tag}>
                 <button
                   type="button"
                   role="checkbox"
                   aria-checked={checked}
                   onClick={() => toggle(opt.tag)}
-                  className={cn(
-                    "flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors hover:bg-cream/60",
-                    i > 0 && "border-t border-[var(--border-hairline)]",
-                  )}
+                  className="flex w-full items-center gap-3.5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-surface px-4 py-3.5 text-left shadow-[var(--shadow-xs)] transition-colors hover:bg-cream"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px] font-medium text-ink">

@@ -35,21 +35,18 @@ export default function UnitsSettingsPage() {
         <ul
           role="radiogroup"
           aria-label="Measurement system"
-          className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
+          className="flex flex-col gap-2.5"
         >
-          {OPTIONS.map((opt, i) => {
+          {OPTIONS.map((opt) => {
             const selected = active === opt.value;
             return (
-              <li key={opt.value} className="bg-surface">
+              <li key={opt.value}>
                 <button
                   type="button"
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setSystem(opt.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3.5 px-5 py-4 text-left transition-colors hover:bg-cream/60",
-                    i > 0 && "border-t border-[var(--border-hairline)]",
-                  )}
+                  className="flex w-full items-center gap-3.5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-surface px-4 py-3.5 text-left shadow-[var(--shadow-xs)] transition-colors hover:bg-cream"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px] font-medium text-ink">

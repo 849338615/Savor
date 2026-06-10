@@ -113,21 +113,10 @@ export function BookmarkToggle({
           title="Remove from saved?"
           description={
             summary?.title ? (
-              <>
-                <span className="font-display text-[15px] font-semibold leading-snug text-ink">
-                  {summary.title}
-                </span>
-                <span className="mt-1 block">
-                  won&rsquo;t appear in your saved list anymore. You can save
-                  it again any time.
-                </span>
-              </>
-            ) : (
-              <>
-                This recipe won&rsquo;t appear in your saved list anymore.
-                You can save it again any time.
-              </>
-            )
+              <span className="font-display text-[15px] font-semibold leading-snug text-ink">
+                {summary.title}
+              </span>
+            ) : null
           }
           cancelLabel="Keep saved"
           confirmLabel="Remove"

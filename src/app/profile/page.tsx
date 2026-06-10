@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import {
+  Bookmark,
+  ChevronRight,
+  Leaf,
+  Ruler,
+  type LucideIcon,
+} from "lucide-react";
 import { useSaved } from "@/hooks/useSaved";
 import { useCookingSession } from "@/hooks/useCookingSession";
 import { useUnits } from "@/hooks/useUnits";
@@ -18,6 +24,7 @@ interface Row {
   label: string;
   meta?: string;
   href?: string;
+  icon: LucideIcon;
 }
 
 export default function ProfilePage() {
@@ -42,16 +49,23 @@ export default function ProfilePage() {
         : `${dietaryTags.length} selected`;
 
   const rows: Row[] = [
-    { label: "Saved recipes", meta: String(savedCount), href: "/saved" },
+    {
+      label: "Saved recipes",
+      meta: String(savedCount),
+      href: "/saved",
+      icon: Bookmark,
+    },
     {
       label: "Dietary preferences",
       meta: dietaryMeta,
       href: "/profile/dietary",
+      icon: Leaf,
     },
     {
       label: "Units",
       meta: unitsHydrated ? unitSystemLabel(unitSystem) : "Metric",
       href: "/profile/units",
+      icon: Ruler,
     },
   ];
 
@@ -72,10 +86,26 @@ export default function ProfilePage() {
       </AmbientLayer>
       <header className="relative px-5 pb-2 pt-[max(env(safe-area-inset-top,1rem),3.5rem)] text-center">
         <div
-          className="mx-auto grid h-[72px] w-[72px] place-items-center rounded-full bg-sage-mist font-display text-[26px] font-semibold text-forest"
+          className="mx-auto grid h-[72px] w-[72px] place-items-center overflow-hidden rounded-full"
           aria-hidden
         >
-          ·
+          <svg
+            viewBox="0 0 64 64"
+            className="h-[72px] w-[72px] text-black"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {/* Toque crown — three puffs */}
+            <path d="M19 33c-5.5 0-9.5-4-9.5-9.2 0-4.6 3.6-8.4 8.2-8.6 1-4.4 5-7.7 9.8-7.7 3.3 0 6.2 1.6 8 4 1.4-1 3.1-1.6 5-1.6 4.4 0 8 3.4 8.4 7.7 4.1.5 7.3 4 7.3 8.2 0 5.2-4 9.2-9.5 9.2" />
+            {/* Hat band */}
+            <path d="M19 33v15.5c0 1.4 1.1 2.5 2.5 2.5h21c1.4 0 2.5-1.1 2.5-2.5V33" />
+            <path d="M19 41h26" />
+            {/* Pleat hints on the band */}
+            <path d="M27 41v10M37 41v10" />
+          </svg>
         </div>
         <h1 className="mt-3 font-display text-[22px] font-semibold text-ink">
           You
@@ -116,12 +146,17 @@ export default function ProfilePage() {
         </section>
       ) : null}
 
-      <ul className="relative mt-5">
-        {rows.map((r, i) => {
-          const isFirst = i === 0;
-          const isLast = i === rows.length - 1;
+      <ul className="relative mt-5 flex flex-col gap-2.5 px-5">
+        {rows.map((r) => {
+          const Icon = r.icon;
           const Inner = (
             <>
+              <span
+                aria-hidden
+                className="grid w-6 shrink-0 place-items-center text-forest"
+              >
+                <Icon size={20} strokeWidth={1.75} />
+              </span>
               <span className="flex-1 text-[15px] text-ink">{r.label}</span>
               {r.meta ? (
                 <span className="text-[13px] text-stone">{r.meta}</span>
@@ -129,17 +164,20 @@ export default function ProfilePage() {
               <ChevronRight
                 size={16}
                 strokeWidth={1.75}
-                className="text-[color:var(--fg-3)]"
+                className="shrink-0 text-[color:var(--fg-3)]"
               />
             </>
           );
-          const className = `flex w-full items-center gap-3.5 border-t border-[var(--border-hairline)] px-5 py-4 ${
-            isLast ? "border-b" : ""
-          } ${isFirst ? "" : ""}`;
+          const className =
+            "flex w-full items-center gap-3.5 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-surface px-3.5 py-3 shadow-[var(--shadow-xs)] transition-colors hover:bg-cream";
           return (
-            <li key={r.label} className="bg-surface">
+            <li key={r.label}>
               {r.href ? (
-                <Link href={r.href} transitionTypes={[NAV_FORWARD]} className={className}>
+                <Link
+                  href={r.href}
+                  transitionTypes={[NAV_FORWARD]}
+                  className={className}
+                >
                   {Inner}
                 </Link>
               ) : (

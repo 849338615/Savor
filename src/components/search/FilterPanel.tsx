@@ -134,49 +134,54 @@ export function FilterPanel({
               </span>
             </div>
 
-            {/* Scrollable groups */}
-            <div className="flex-1 overflow-y-auto px-6 pt-3">
-              <div className="flex flex-col gap-5 pb-2">
-                {FILTER_GROUPS.map((group) => (
-                  <fieldset key={group.id} className="border-0 p-0">
-                    <legend className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
-                      {group.label}
-                    </legend>
-                    <div className="flex flex-wrap gap-2">
-                      {group.options.map(({ label, tag }) => {
-                        const active = draft.includes(tag);
-                        return (
-                          <button
-                            key={tag}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => toggle(tag)}
-                            className={cn(
-                              "rounded-[var(--radius-pill)] px-4 py-[9px] text-[13px] leading-none transition-colors",
-                              active
-                                ? "bg-sage-mist font-semibold text-forest"
-                                : "font-medium text-ink hover:bg-linen",
-                            )}
-                            style={
-                              active
-                                ? {
-                                    boxShadow:
-                                      "inset 0 0 0 1px var(--border-active-faint)",
-                                  }
-                                : {
-                                    background: "var(--bg-surface)",
-                                    boxShadow:
-                                      "inset 0 0 0 1px var(--border-hairline)",
-                                  }
-                            }
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
+            {/* Scrollable groups — hairline-separated sections so each
+                category reads as a distinct block, with a per-section count
+                so active filters are legible at a glance. */}
+            <div className="flex-1 overflow-y-auto px-6">
+              <div className="divide-y divide-[var(--border-hairline)] pb-1">
+                {FILTER_GROUPS.map((group) => {
+                  const count = group.options.filter((o) =>
+                    draft.includes(o.tag),
+                  ).length;
+                  return (
+                    <div
+                      key={group.id}
+                      role="group"
+                      aria-label={group.label}
+                      className="py-3.5"
+                    >
+                      <p className="mb-2.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
+                        {group.label}
+                        {count > 0 && (
+                          <span className="grid h-[17px] min-w-[17px] place-items-center rounded-full bg-sage-mist px-1 text-[10px] font-bold tabular-nums tracking-normal text-forest">
+                            {count}
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {group.options.map(({ label, tag }) => {
+                          const active = draft.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => toggle(tag)}
+                              className={cn(
+                                "rounded-[var(--radius-pill)] px-3.5 py-2.5 text-[13px] leading-none ring-1 ring-inset transition-colors",
+                                active
+                                  ? "bg-sage-mist font-semibold text-forest ring-[color:var(--border-active-faint)]"
+                                  : "bg-surface font-medium text-ink ring-[color:var(--border-hairline)] hover:bg-linen hover:ring-[color:var(--border-strong)]",
+                              )}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </fieldset>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
