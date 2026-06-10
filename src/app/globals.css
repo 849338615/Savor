@@ -323,13 +323,17 @@ input[type="search"]::-webkit-search-results-decoration {
    the page content moves.
    ========================================================================== */
 
-/* Peer destinations — tabs, in-place results refine: a calm crossfade that
-   settles upward. "Same place, different content." */
+/* Peer destinations — tabs, in-place results refine: a "fade through" the
+   cream background, NOT a crossfade. The old screen leaves fully (and fast)
+   *before* the new one arrives, so the two never sit on screen together as a
+   washed-out double image — the #1 cause of the old screen appearing to
+   "linger and overlap". The brief gap is just the app's own cream surface, so
+   it reads as a clean swap rather than ghosting. */
 ::view-transition-old(.vt-crossfade) {
-  animation: var(--duration-fast) var(--ease-standard) both vt-fade-out;
+  animation: 90ms var(--ease-standard) both vt-fade-out;
 }
 ::view-transition-new(.vt-crossfade) {
-  animation: var(--duration-base) var(--ease-out-soft) 60ms both vt-fade-in-up;
+  animation: var(--duration-base) var(--ease-out-soft) 90ms both vt-fade-in-up;
 }
 
 /* Forward — going deeper (open a recipe, search, open a setting): the new
