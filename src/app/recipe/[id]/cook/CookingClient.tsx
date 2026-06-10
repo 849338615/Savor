@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Type } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CookingStep } from "@/components/cook/CookingStep";
+import { CookStepRail } from "@/components/cook/CookStepRail";
 import { CookingControls } from "@/components/cook/CookingControls";
 import { TimerDisplay } from "@/components/cook/TimerDisplay";
 import { Skeleton } from "@/components/feedback/Skeleton";
@@ -15,6 +16,7 @@ import {
 import { useCookingSession } from "@/hooks/useCookingSession";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { cn } from "@/lib/utils";
+import { EXIT_COOK } from "@/lib/transitions";
 import type { Recipe } from "@/lib/recipes/types";
 
 export function CookingClient({ recipe }: { recipe: Recipe }) {
@@ -106,7 +108,7 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
-      router.replace(`/recipe/${recipe.slug}`);
+      router.replace(`/recipe/${recipe.slug}`, { transitionTypes: [EXIT_COOK] });
     }
   }, [router, recipe.slug]);
 
@@ -116,7 +118,7 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
-      router.replace(`/recipe/${recipe.slug}`);
+      router.replace(`/recipe/${recipe.slug}`, { transitionTypes: [EXIT_COOK] });
     }
   }, [reset, router, recipe.slug]);
 
@@ -218,38 +220,7 @@ export function CookingClient({ recipe }: { recipe: Recipe }) {
         </button>
       </header>
 
-      <ol
-        aria-label="Step rail"
-        className="relative mx-auto flex w-full max-w-[360px] items-center justify-between px-3 pb-1"
-      >
-        {recipe.steps.map((s, i) => {
-          const done = i < safeIndex;
-          const current = i === safeIndex;
-          return (
-            <li key={s.id} className="flex">
-              <button
-                type="button"
-                onClick={() => goTo(i)}
-                aria-label={`Go to step ${i + 1}`}
-                aria-current={current ? "step" : undefined}
-                className="grid h-11 w-11 place-items-center"
-              >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "block h-2 w-2 rounded-full transition-colors",
-                    current
-                      ? "bg-forest"
-                      : done
-                      ? "bg-sage"
-                      : "bg-[var(--border-strong)]",
-                  )}
-                />
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+      <CookStepRail total={total} current={safeIndex} onSelect={goTo} />
 
       <div
         className={cn(

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Clock, Star } from "lucide-react";
 import type { RecipeSummary } from "@/lib/recipes/types";
 import { difficultyTextTone, formatMinutes } from "@/lib/utils";
+import { NAV_FORWARD } from "@/lib/transitions";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "./RecipePhoto";
 
@@ -23,6 +24,7 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
   return (
     <Link
       href={`/recipe/${recipe.slug}`}
+      transitionTypes={[NAV_FORWARD]}
       className="group flex gap-3.5 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-surface p-2.5 pr-4 transition-colors active:scale-[0.997] hover:border-forest/30"
     >
       <div className="relative h-[112px] w-[112px] shrink-0 overflow-hidden rounded-[var(--radius-md)]">

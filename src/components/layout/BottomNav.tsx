@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Home, Bookmark, ChefHat, User } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCookingSession } from "@/hooks/useCookingSession";
 import { useLastResults, buildResultsHref } from "@/hooks/useLastResults";
 import { useNav, sectionForPath, type Section } from "@/hooks/useNav";
+import { TAB, ENTER_COOK } from "@/lib/transitions";
 import { cn } from "@/lib/utils";
 
 type Item = {
@@ -15,6 +17,8 @@ type Item = {
   icon: typeof Home;
   section?: Section;
   match: (p: string) => boolean;
+  /** View-transition type for this tab. Defaults to a peer crossfade (TAB). */
+  transitionTypes?: string[];
 };
 
 const STATIC_ITEMS: Item[] = [
@@ -44,11 +48,6 @@ const STATIC_ITEMS: Item[] = [
   },
 ];
 
-/**
- * Bottom tab bar. Hidden during cook mode. The Cook tab only appears when
- * a real session exists; tapping it resumes that exact recipe rather than
- * promising one and dropping the user on the home screen.
- */
 export function BottomNav() {
   const pathname = usePathname() ?? "/";
   const recipeSlug = useCookingSession((s) => s.recipeSlug);
@@ -59,6 +58,7 @@ export function BottomNav() {
   const lastHydrated = useLastResults((s) => s.hasHydrated);
   const clearLastResults = useLastResults((s) => s.clear);
   const setSection = useNav((s) => s.setSection);
+  const reduce = useReducedMotion();
 
   // Keep the active section in sync with the URL. Direct nav, deep links,
   // and back/forward all flow through here. /recipe/* paths intentionally
@@ -73,7 +73,12 @@ export function BottomNav() {
     if (pathname === "/") clearLastResults();
   }, [pathname, setSection, clearLastResults]);
 
-  if (pathname.endsWith("/cook")) return null;
+  // Hidden on focus screens: cook mode and the recipe detail/decision screen.
+  // Both are reached by forward navigation, both carry their own back
+  // affordance plus a single dominant action — a hovering tab bar would only
+  // clutter them. (The view-transition CSS renders the nav's old snapshot as
+  // display:none, so it simply vanishes rather than sliding out.)
+  if (pathname.startsWith("/recipe/")) return null;
 
   const items = STATIC_ITEMS.map((item) => {
     if (item.label !== "Home") return item;
@@ -86,41 +91,89 @@ export function BottomNav() {
       href: `/recipe/${recipeSlug}/cook`,
       label: "Resume",
       icon: ChefHat,
-      match: (p) => p.includes("/cook"),
+      match: () => false,
+      // Resuming drops into full-screen focus mode (nav bar disappears), so
+      // it gets the "step into focus" motion rather than a peer crossfade.
+      transitionTypes: [ENTER_COOK],
     });
   }
+
+  // On-brand morph: ease-out-soft, no spring/bounce (mirrors --ease-out-soft /
+  // --duration-base in globals.css). Collapses to an instant swap when the
+  // user prefers reduced motion.
+  const morph = reduce
+    ? { duration: 0 }
+    : ({ duration: 0.34, ease: [0.16, 1, 0.3, 1] } as const);
 
   return (
     <nav
       aria-label="Primary"
-      className="sticky bottom-0 z-30 border-t border-[var(--border-hairline)] bg-cream"
+      className="nav-island absolute left-1/2 z-30 -translate-x-1/2 rounded-full p-1.5"
       style={{
-        paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
+        // Anchored during page transitions — see globals.css. Keeps the bar
+        // fixed while page content slides/fades beneath it.
+        viewTransitionName: "bottom-nav",
+        bottom: "calc(env(safe-area-inset-bottom) + 0.625rem)",
       }}
     >
-      <ul className="flex items-stretch justify-around px-2 pt-2">
-        {items.map((item) => {
-          const active = item.match(pathname);
-          const Icon = item.icon;
-          return (
-            <li key={item.label} className="flex-1">
-              <Link
-                href={item.href}
-                onClick={() => {
-                  if (item.section) setSection(item.section);
-                }}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-forest" : "text-stone hover:text-ink",
-                )}
+      <ul className="flex items-center gap-1">
+        <AnimatePresence initial={false}>
+          {items.map((item) => {
+            const active = item.match(pathname);
+            const Icon = item.icon;
+            return (
+              <motion.li
+                key={item.label}
+                layout
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={morph}
+                className="flex"
               >
-                <Icon size={22} strokeWidth={1.75} aria-hidden />
-                <span>{item.label}</span>
-              </Link>
-            </li>
-          );
-        })}
+                <Link
+                  href={item.href}
+                  transitionTypes={item.transitionTypes ?? [TAB]}
+                  onClick={() => {
+                    if (item.section) setSection(item.section);
+                  }}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={item.label}
+                  className={cn(
+                    "relative flex h-11 items-center justify-center overflow-hidden rounded-full transition-[color,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    active
+                      ? "bg-forest text-soft-white shadow-[0_3px_12px_-3px_rgba(31,77,58,0.6)]"
+                      : "text-stone hover:bg-white/45 hover:text-ink",
+                  )}
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center">
+                    <Icon
+                      size={21}
+                      strokeWidth={active ? 2 : 1.85}
+                      aria-hidden
+                    />
+                  </span>
+                  <AnimatePresence initial={false}>
+                    {active && (
+                      <motion.span
+                        key="label"
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: "auto", opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={morph}
+                        className="overflow-hidden"
+                      >
+                        <span className="block whitespace-nowrap pl-0.5 pr-4 text-[13px] font-semibold leading-none tracking-[-0.01em]">
+                          {item.label}
+                        </span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
       </ul>
     </nav>
   );

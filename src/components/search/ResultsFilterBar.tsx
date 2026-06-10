@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterBar } from "./FilterBar";
 import { parseTags, serializeTags } from "@/lib/filters";
+import { TAB } from "@/lib/transitions";
 
 /**
  * Results-page filter bar. The URL is the source of truth: selections come
@@ -20,7 +21,9 @@ export function ResultsFilterBar() {
     if (q) next.set("q", q);
     if (tags.length) next.set("tag", serializeTags(tags));
     const search = next.toString();
-    router.push(`/results${search ? `?${search}` : ""}`);
+    router.push(`/results${search ? `?${search}` : ""}`, {
+      transitionTypes: [TAB],
+    });
   }
 
   return <FilterBar selected={selected} onChange={onChange} />;

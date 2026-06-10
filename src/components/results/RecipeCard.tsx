@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { RecipeSummary } from "@/lib/recipes/types";
 import { cn, difficultyTextTone, pluralize } from "@/lib/utils";
+import { NAV_FORWARD } from "@/lib/transitions";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "./RecipePhoto";
 
@@ -26,6 +27,7 @@ export function RecipeCard({
   return (
     <Link
       href={`/recipe/${recipe.slug}`}
+      transitionTypes={[NAV_FORWARD]}
       className="group block rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-surface transition-transform active:scale-[0.99]"
     >
       <div

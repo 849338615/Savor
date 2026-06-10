@@ -1,4 +1,5 @@
 import { BottomNav } from "./BottomNav";
+import { AppMain } from "./AppMain";
 import { AmbientLayer, Bloom } from "./AmbientBackground";
 import { SplashScreen } from "./SplashScreen";
 
@@ -33,7 +34,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             its own — pages don't have to compose anything extra to feel
             on-brand. Stronger compositions (HomeAmbience, cook focus,
             profile spotlight) layer additional blooms on top. */}
-        <AmbientLayer>
+        {/* Anchored during page transitions: the named view-transition group
+            (see globals.css) keeps the warm bloom fixed while content moves. */}
+        <AmbientLayer className="[view-transition-name:ambient-bg]">
           <Bloom
             position="-right-[30%] -top-[20%]"
             size="w-[120%]"
@@ -42,9 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             fadeAt={64}
           />
         </AmbientLayer>
-        <main className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {children}
-        </main>
+        <AppMain>{children}</AppMain>
         <BottomNav />
 
         {/* Launch screen — top layer of the card, server-rendered inline so it

@@ -7,6 +7,7 @@ import { difficultyTone, formatMinutes, pluralize } from "@/lib/utils";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "@/components/results/RecipePhoto";
 import { useSectionBackHref } from "@/hooks/useNav";
+import { NAV_BACK } from "@/lib/transitions";
 
 interface RecipeHeroProps {
   recipe: Recipe;
@@ -16,7 +17,7 @@ export function RecipeHero({ recipe }: RecipeHeroProps) {
   const router = useRouter();
   const sectionBack = useSectionBackHref();
   const handleBack = () => {
-    if (sectionBack) router.push(sectionBack);
+    if (sectionBack) router.push(sectionBack, { transitionTypes: [NAV_BACK] });
     else router.back();
   };
 

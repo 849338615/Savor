@@ -32,16 +32,10 @@ export default function UnitsSettingsPage() {
       <TopBar title="Units" back="/profile" />
 
       <div className="px-5 pb-10 pt-2">
-        <p className="px-1 text-[13px] leading-relaxed text-stone">
-          Choose how ingredient amounts are shown. Conversions are approximate
-          and rounded to practical cooking amounts; teaspoons and tablespoons
-          stay the same in both systems.
-        </p>
-
         <ul
           role="radiogroup"
           aria-label="Measurement system"
-          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
+          className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
         >
           {OPTIONS.map((opt, i) => {
             const selected = active === opt.value;

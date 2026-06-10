@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft, X } from "lucide-react";
 import { useSectionBackHref } from "@/hooks/useNav";
+import { NAV_BACK } from "@/lib/transitions";
 import { cn } from "@/lib/utils";
 
 interface TopBarProps {
@@ -44,7 +45,7 @@ export function TopBar({
     if (typeof back === "function") return back();
     const target = typeof back === "string" ? back : sectionBack;
     if (target) {
-      router.push(target);
+      router.push(target, { transitionTypes: [NAV_BACK] });
       return;
     }
     router.back();

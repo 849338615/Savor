@@ -29,16 +29,10 @@ export default function DietaryPreferencesPage() {
       <TopBar title="Dietary preferences" back="/profile" />
 
       <div className="px-5 pb-10 pt-2">
-        <p className="px-1 text-[13px] leading-relaxed text-stone">
-          Select any that apply. Savor pre-applies them to your searches so
-          results fit your diet — you can still adjust the filters on any
-          search.
-        </p>
-
         <ul
           role="group"
           aria-label="Dietary preferences"
-          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
+          className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-hairline)]"
         >
           {DIET_OPTIONS.map((opt, i) => {
             const checked = selected.includes(opt.tag);

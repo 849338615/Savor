@@ -99,6 +99,16 @@
   --shadow-lg: 0 16px 40px rgba(35, 35, 35, 0.08);
   --shadow-focus: 0 0 0 3px rgba(31, 77, 58, 0.18);
 
+  /* Floating nav — glass island. Purposeful blur over scrolling content:
+     warm paper tint + saturate so brand color (not cold gray) shows through. */
+  --nav-glass: color-mix(in oklch, var(--savor-paper) 60%, transparent);
+  --nav-glass-solid: color-mix(in oklch, var(--savor-paper) 82%, transparent);
+  --nav-glass-border: rgba(255, 255, 255, 0.6);
+  --nav-glass-shadow:
+    0 16px 36px -16px rgba(35, 35, 35, 0.32),
+    0 5px 14px -6px rgba(35, 35, 35, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
@@ -275,6 +285,25 @@ input[type="search"]::-webkit-search-results-decoration {
   background-repeat: repeat-x;
 }
 
+/* Floating primary nav — a glass island that hovers above scrolling content.
+   The blur here is functional, not decorative: the bar floats over moving
+   content, so translucency keeps it visually layered, while the warm paper
+   tint + saturate keep brand color — not a cold gray — showing through. Where
+   backdrop-filter is unsupported it falls back to a more opaque paper fill so
+   labels stay legible. */
+.nav-island {
+  background: var(--nav-glass-solid);
+  border: 1px solid var(--nav-glass-border);
+  box-shadow: var(--nav-glass-shadow);
+}
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .nav-island {
+    background: var(--nav-glass);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    backdrop-filter: blur(22px) saturate(185%);
+  }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -282,5 +311,136 @@ input[type="search"]::-webkit-search-results-decoration {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* ==========================================================================
+   View transitions — screen & tab motion
+   Restrained and on-brand: slide and fade only, no bounce. Durations/easings
+   reuse the motion tokens above. Each navigation tags itself with a type
+   (lib/transitions.ts); app/template.tsx maps the type to one of the classes
+   below. Persistent chrome (bottom nav, ambient bloom) is anchored so only
+   the page content moves.
+   ========================================================================== */
+
+/* Peer destinations — tabs, in-place results refine: a calm crossfade that
+   settles upward. "Same place, different content." */
+::view-transition-old(.vt-crossfade) {
+  animation: var(--duration-fast) var(--ease-standard) both vt-fade-out;
+}
+::view-transition-new(.vt-crossfade) {
+  animation: var(--duration-base) var(--ease-out-soft) 60ms both vt-fade-in-up;
+}
+
+/* Forward — going deeper (open a recipe, search, open a setting): the new
+   screen arrives from the right while the old one recedes left. */
+::view-transition-old(.vt-forward) {
+  animation:
+    var(--duration-fast) var(--ease-standard) both vt-fade-out,
+    var(--duration-slow) var(--ease-out-soft) both vt-slide-out-left;
+}
+::view-transition-new(.vt-forward) {
+  animation:
+    var(--duration-base) var(--ease-out-soft) 60ms both vt-fade-in,
+    var(--duration-slow) var(--ease-out-soft) both vt-slide-in-right;
+}
+
+/* Back — returning: mirror of forward. */
+::view-transition-old(.vt-back) {
+  animation:
+    var(--duration-fast) var(--ease-standard) both vt-fade-out,
+    var(--duration-slow) var(--ease-out-soft) both vt-slide-out-right;
+}
+::view-transition-new(.vt-back) {
+  animation:
+    var(--duration-base) var(--ease-out-soft) 60ms both vt-fade-in,
+    var(--duration-slow) var(--ease-out-soft) both vt-slide-in-left;
+}
+
+/* Cook — stepping into focus (the bottom nav disappears): the new screen
+   rises in with a gentle scale; the old one simply fades out. */
+::view-transition-old(.vt-enter-cook) {
+  animation: var(--duration-base) var(--ease-standard) both vt-fade-out;
+}
+::view-transition-new(.vt-enter-cook) {
+  transform-origin: center;
+  animation:
+    var(--duration-slow) var(--ease-out-soft) both vt-fade-in,
+    var(--duration-slow) var(--ease-out-soft) both vt-scale-in;
+}
+/* Leaving focus — the reverse, a touch quicker. */
+::view-transition-old(.vt-exit-cook) {
+  transform-origin: center;
+  animation:
+    var(--duration-base) var(--ease-standard) both vt-fade-out,
+    var(--duration-base) var(--ease-out-soft) both vt-scale-out;
+}
+::view-transition-new(.vt-exit-cook) {
+  animation: var(--duration-slow) var(--ease-out-soft) 40ms both vt-fade-in;
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Restrained 24px travel — enough to read direction, never a long journey
+   across the 440px frame. */
+@keyframes vt-slide-in-right {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
+}
+@keyframes vt-slide-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-24px); }
+}
+@keyframes vt-slide-in-left {
+  from { transform: translateX(-24px); }
+  to { transform: translateX(0); }
+}
+@keyframes vt-slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(24px); }
+}
+@keyframes vt-scale-in {
+  from { transform: scale(0.98); }
+  to { transform: scale(1); }
+}
+@keyframes vt-scale-out {
+  from { transform: scale(1); }
+  to { transform: scale(0.98); }
+}
+
+/* Anchored chrome — only page content moves. The bottom nav, the app-level
+   ambient bloom, and the leftover root are held still; `display:none` on the
+   old snapshots avoids a double-image flash during the swap. */
+::view-transition-group(bottom-nav),
+::view-transition-group(ambient-bg),
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-group(bottom-nav) {
+  z-index: 40;
+}
+::view-transition-old(bottom-nav),
+::view-transition-old(ambient-bg) {
+  display: none;
+}
+
+/* Reduced motion: collapse every page transition to an instant swap. The
+   global `*` rule above can't reach these pseudo-elements, so override here. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
   }
 }

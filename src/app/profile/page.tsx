@@ -8,6 +8,7 @@ import { useUnits } from "@/hooks/useUnits";
 import { useDietary } from "@/hooks/useDietary";
 import { unitSystemLabel } from "@/lib/units/convert";
 import { labelForTag } from "@/lib/filters";
+import { ENTER_COOK, NAV_FORWARD } from "@/lib/transitions";
 import {
   AmbientLayer,
   Bloom,
@@ -99,6 +100,7 @@ export default function ProfilePage() {
           <div className="mt-3 flex items-center gap-2">
             <Link
               href={`/recipe/${recipeSlug}/cook`}
+              transitionTypes={[ENTER_COOK]}
               className="grid h-9 place-items-center rounded-[var(--radius-pill)] bg-forest px-3.5 text-[12px] font-semibold text-soft-white transition-colors hover:bg-[var(--bg-brand-hover)]"
             >
               Resume
@@ -137,7 +139,7 @@ export default function ProfilePage() {
           return (
             <li key={r.label} className="bg-surface">
               {r.href ? (
-                <Link href={r.href} className={className}>
+                <Link href={r.href} transitionTypes={[NAV_FORWARD]} className={className}>
                   {Inner}
                 </Link>
               ) : (

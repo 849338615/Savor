@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
+    // Enable React's View Transitions integration so route navigations are
+    // wrapped in the browser's View Transition API. This is what lets the
+    // <ViewTransition> wrapper in app/template.tsx animate screen-to-screen
+    // (see globals.css for the per-type motion). Without browser support it
+    // gracefully no-ops — content just swaps, navigation still works.
+    viewTransition: true,
+
     // Keep dynamic page segments in the client router cache for 5 minutes so
     // returning to a page reuses its already-rendered result instead of
     // re-fetching. Without this (the default is 0s = never cached), leaving

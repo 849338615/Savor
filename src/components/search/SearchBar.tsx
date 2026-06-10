@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { serializeTags } from "@/lib/filters";
+import { NAV_FORWARD } from "@/lib/transitions";
 
 interface SearchBarProps {
   defaultValue?: string;
@@ -51,7 +52,9 @@ export function SearchBar({
     if (!q) return;
     const params = new URLSearchParams({ q });
     if (carryTags.length) params.set("tag", serializeTags(carryTags));
-    router.push(`/results?${params.toString()}`);
+    router.push(`/results?${params.toString()}`, {
+      transitionTypes: [NAV_FORWARD],
+    });
   }
 
   return (
