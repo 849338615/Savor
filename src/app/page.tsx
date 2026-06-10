@@ -25,10 +25,6 @@ export default function Home() {
         style={{ paddingTop: "max(env(safe-area-inset-top, 1rem), 8.5rem)" }}
       >
         <WelcomeHero />
-        <p className="max-w-[30ch] text-[15px] leading-[1.6] text-stone text-balance">
-          Search a dish, an ingredient, or pick a mood. Savor will guide you,
-          one step at a time.
-        </p>
       </section>
 
       {/* Spacer pushes the action zone to the bottom of the viewport */}
