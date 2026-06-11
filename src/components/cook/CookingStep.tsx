@@ -30,14 +30,6 @@ export function CookingStep({ step, largeText = false }: CookingStepProps) {
             {step.section}
           </div>
         )}
-        <h2
-          className={cn(
-            "font-display font-semibold leading-[1.18] tracking-[-0.005em] text-ink",
-            largeText ? "text-[34px]" : "text-[28px]",
-          )}
-        >
-          {step.title}
-        </h2>
         <p
           className={cn(
             "leading-[1.55] text-ink/85",
