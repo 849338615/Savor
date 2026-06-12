@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock, Star } from "lucide-react";
 import type { RecipeSummary } from "@/lib/recipes/types";
-import { difficultyTextTone, formatMinutes } from "@/lib/utils";
+import { difficultyTextTone, excerpt, formatMinutes } from "@/lib/utils";
 import { NAV_FORWARD } from "@/lib/transitions";
 import { BookmarkToggle } from "@/components/recipe/BookmarkToggle";
 import { RecipePhoto } from "./RecipePhoto";
@@ -49,7 +49,7 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
           </h3>
           {recipe.summary ? (
             <p className="text-[12.5px] leading-[1.45] text-stone line-clamp-2">
-              {recipe.summary}
+              {excerpt(recipe.summary)}
             </p>
           ) : null}
         </div>

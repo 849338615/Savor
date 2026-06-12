@@ -74,6 +74,40 @@ export function pluralize(
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+/**
+ * Condense a recipe blurb for dense surfaces (the results row) where only
+ * ~two lines are available. Packs whole leading sentences up to `maxChars`
+ * so the excerpt ends on a natural boundary instead of mid-thought; if even
+ * the first sentence runs long, falls back to a clean word-boundary cut with
+ * an ellipsis — never a mid-word chop. Returns "" for empty input.
+ */
+export function excerpt(text: string | undefined, maxChars = 96): string {
+  if (!text) return "";
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= maxChars) return clean;
+
+  // Pack complete sentences while they fit within the budget.
+  const sentences = clean.match(/[^.!?]+[.!?]+/g) ?? [];
+  let out = "";
+  for (const s of sentences) {
+    const next = (out + s).trim();
+    if (out && next.length > maxChars) break;
+    out = next;
+    if (out.length >= maxChars) break;
+  }
+  if (out && out.length <= maxChars) return out;
+
+  // Fallback: cut at the last word boundary before the limit, trim trailing
+  // punctuation, and mark the elision with an ellipsis.
+  const slice = clean.slice(0, maxChars);
+  const cut = slice.lastIndexOf(" ");
+  const body = (cut > maxChars * 0.5 ? slice.slice(0, cut) : slice).replace(
+    /[\s,;:.!?–—-]+$/,
+    "",
+  );
+  return `${body}…`;
+}
+
 export function formatSecondsAsClock(seconds: number): string {
   const m = Math.floor(seconds / 60)
     .toString()
