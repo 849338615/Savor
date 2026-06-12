@@ -49,20 +49,10 @@ function ResultsLoadingShell({
   const status = buildStatus(query, tags);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <TopBar title="Results" />
 
-      <div className="px-6 pt-1">
-        <SearchBar defaultValue={query} />
-      </div>
-
-      <Suspense fallback={<div className="h-10" />}>
-        <div className="mt-4 px-6">
-          <ResultsFilterBar />
-        </div>
-      </Suspense>
-
-      <section className="flex flex-1 flex-col px-6 pt-8 pb-8">
+      <section className="scroll-fade-bottom flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-4 pt-5">
         <h2 className="font-display text-[22px] font-semibold leading-tight text-ink">
           {headline}
         </h2>
@@ -82,6 +72,15 @@ function ResultsLoadingShell({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="px-6 pb-5 pt-3">
+        <Suspense fallback={<div className="h-10" />}>
+          <ResultsFilterBar />
+        </Suspense>
+        <div className="pt-4">
+          <SearchBar defaultValue={query} />
+        </div>
       </section>
     </div>
   );

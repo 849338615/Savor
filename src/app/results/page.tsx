@@ -30,26 +30,13 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const headline = buildHeadline(q, tags);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <RecordLastResults q={q} tag={tag ?? ""} />
       <TopBar title="Results" />
 
-      {/* Header rhythm: TopBar → SearchBar (24px, framing the bar away
-          from the nav lockup) → Chips (16px, intra-section) → Section
-          headline (24px, mirrors the TopBar gap to bookend the header
-          zone). The 24/16/24 pattern reads as a distinct "header
-          section" between the nav and the results body. */}
-      <div className="px-6 pt-3">
-        <SearchBar defaultValue={q} carryTags={tags} />
-      </div>
-
-      <Suspense fallback={<div className="h-10" />}>
-        <div className="mt-4 px-6">
-          <ResultsFilterBar />
-        </div>
-      </Suspense>
-
-      <section className="flex flex-1 flex-col px-6 pt-6 pb-8">
+      {/* Results body scrolls between the fixed TopBar and the bottom action
+          zone. The headline rides with the list it titles. */}
+      <section className="scroll-fade-bottom flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-4 pt-5">
         <h2 className="font-display text-[22px] font-semibold leading-tight text-ink">
           {headline}
         </h2>
@@ -60,6 +47,18 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
         >
           <ResultsBody q={q} tags={tags} />
         </Suspense>
+      </section>
+
+      {/* Bottom action zone — filter bar + search, anchored above the floating
+          nav island. Mirrors the home layout so search lives in the same place
+          across the app, always reachable rather than scrolling away up top. */}
+      <section className="px-6 pb-5 pt-3">
+        <Suspense fallback={<div className="h-10" />}>
+          <ResultsFilterBar />
+        </Suspense>
+        <div className="pt-4">
+          <SearchBar defaultValue={q} carryTags={tags} />
+        </div>
       </section>
     </div>
   );

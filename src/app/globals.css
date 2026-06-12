@@ -285,6 +285,18 @@ input[type="search"]::-webkit-search-results-decoration {
   background-repeat: repeat-x;
 }
 
+/* Soft bottom fade for an internal scroll region — content dissolves into the
+   anchored zone below (e.g. the results search bar) instead of clipping hard
+   at the edge. */
+.scroll-fade-bottom {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 18px),
+    transparent
+  );
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+}
+
 /* Floating primary nav — a glass island that hovers above scrolling content.
    The blur here is functional, not decorative: the bar floats over moving
    content, so translucency keeps it visually layered, while the warm paper
