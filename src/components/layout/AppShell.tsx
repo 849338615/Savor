@@ -1,6 +1,6 @@
 import { BottomNav } from "./BottomNav";
 import { AppMain } from "./AppMain";
-import { AmbientLayer, Bloom } from "./AmbientBackground";
+import { AppAmbience } from "./AppAmbience";
 import { SplashScreen } from "./SplashScreen";
 
 /**
@@ -26,25 +26,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         id="app-frame"
         className="relative flex h-full w-full max-w-[440px] flex-col bg-soft-white shadow-[0_0_0_1px_var(--color-mist)] sm:h-[calc(100dvh-3rem)] sm:max-h-[920px] sm:rounded-[28px] sm:shadow-[var(--shadow-app-edge),0_0_0_1px_var(--color-mist)] sm:overflow-hidden"
       >
-        {/* App-wide ambient warmth — a sand bloom in the upper-right
-            that plays through every screen as the base identity layer.
-            Sized and angled to stay clear of where content typically
-            sits (cards down the spine of the page) so it never competes,
-            but with enough presence that the warmth is recognizable on
-            its own — pages don't have to compose anything extra to feel
-            on-brand. Stronger compositions (HomeAmbience, cook focus,
-            profile spotlight) layer additional blooms on top. */}
-        {/* Anchored during page transitions: the named view-transition group
-            (see globals.css) keeps the warm bloom fixed while content moves. */}
-        <AmbientLayer className="[view-transition-name:ambient-bg]">
-          <Bloom
-            position="-right-[30%] -top-[20%]"
-            size="w-[120%]"
-            tone="sand"
-            opacity={52}
-            fadeAt={64}
-          />
-        </AmbientLayer>
+        {/* App-wide ambient warmth (hidden on the results list). */}
+        <AppAmbience />
         <AppMain>{children}</AppMain>
         <BottomNav />
 
