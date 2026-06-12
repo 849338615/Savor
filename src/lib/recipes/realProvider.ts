@@ -7,6 +7,7 @@ import type {
   Difficulty,
 } from "./types";
 import { extractOne, searchAndExtractTopRecipes } from "./extraction";
+import { summarizeBlurbs } from "./extraction/summarizeBlurbs";
 import { isHardQuery, planQuery, type QueryPlan } from "./extraction/queryPlanner";
 import { extractStepDurationSeconds } from "./extraction/parseDuration";
 import type { ExtractedCandidate, ExtractedIngredient } from "./extraction/types";
@@ -72,10 +73,23 @@ export const realProvider: RecipeProvider = {
       }
     }
 
+    const recipes = results.map(({ candidate }) =>
+      toSummary(candidate, scoredRatingHint(results, candidate)),
+    );
+
+    // Rewrite the raw page descriptions into short, complete blurbs that fit
+    // the results card. One batched Haiku call; no-ops (returns originals) when
+    // ANTHROPIC_API_KEY is unset or the call fails, so search never breaks on
+    // summary generation. The UI still trims as a final safety net.
+    const blurbs = await summarizeBlurbs(
+      recipes.map((r) => ({ title: r.title, description: r.summary })),
+    );
+    blurbs.forEach((blurb, i) => {
+      recipes[i].summary = blurb;
+    });
+
     return {
-      recipes: results.map(({ candidate }) =>
-        toSummary(candidate, scoredRatingHint(results, candidate)),
-      ),
+      recipes,
       correction: meaningfulCorrection(correction, trimmed),
     };
   },

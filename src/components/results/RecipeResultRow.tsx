@@ -49,7 +49,7 @@ export function RecipeResultRow({ recipe }: RecipeResultRowProps) {
           </h3>
           {recipe.summary ? (
             <p className="text-[12.5px] leading-[1.45] text-stone line-clamp-2">
-              {excerpt(recipe.summary)}
+              {excerpt(recipe.summary, 66)}
             </p>
           ) : null}
         </div>

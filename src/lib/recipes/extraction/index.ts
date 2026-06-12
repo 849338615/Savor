@@ -78,9 +78,15 @@ const LLM_SKIP_LINK_THRESHOLD = 10;
  * failures (sites 403 / time out under load), not because the recipes don't
  * exist. Cache those short results only briefly so the next request retries,
  * instead of pinning a collapsed result for the full window.
+ *
+ * A near-total collapse (≤ COLLAPSE_RESULT_THRESHOLD) is almost certainly an
+ * unlucky roll of site 403s — caching it at all would strand the user on a
+ * one-result page until expiry. Skip the cache entirely there so the very next
+ * search re-rolls which sites respond.
  */
 const MIN_HEALTHY_RESULTS = 3;
 const SHORT_RESULT_TTL_MS = 60 * 1000;
+const COLLAPSE_RESULT_THRESHOLD = 1;
 
 export interface SearchAndExtractOpts {
   query: string;
@@ -195,12 +201,16 @@ export async function searchAndExtractTopRecipes(
   const outcome: SearchOutcome = { results: scored, correctedQuery };
 
   // Pin a healthy result for the full window; let a short one expire fast so a
-  // transient fetch failure doesn't poison repeat searches for 5 minutes.
-  const ttl =
-    scored.length >= Math.min(MIN_HEALTHY_RESULTS, limit)
-      ? undefined
-      : SHORT_RESULT_TTL_MS;
-  SEARCH_CACHE.set(cacheKey, outcome, ttl);
+  // transient fetch failure doesn't poison repeat searches for 5 minutes. A
+  // near-total collapse isn't cached at all — the next search re-rolls instead
+  // of being stuck on a one-result page.
+  if (scored.length > COLLAPSE_RESULT_THRESHOLD) {
+    const ttl =
+      scored.length >= Math.min(MIN_HEALTHY_RESULTS, limit)
+        ? undefined
+        : SHORT_RESULT_TTL_MS;
+    SEARCH_CACHE.set(cacheKey, outcome, ttl);
+  }
   return { results: scored.slice(0, limit), correctedQuery };
 }
 

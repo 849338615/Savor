@@ -81,7 +81,7 @@ export function pluralize(
  * the first sentence runs long, falls back to a clean word-boundary cut with
  * an ellipsis — never a mid-word chop. Returns "" for empty input.
  */
-export function excerpt(text: string | undefined, maxChars = 96): string {
+export function excerpt(text: string | undefined, maxChars = 62): string {
   if (!text) return "";
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= maxChars) return clean;
